@@ -5,7 +5,16 @@ import { supabase } from '../lib/supabase'
 export function Login() {
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
-  const [step, setStep] = useState<'email' | 'code'>('email')
+  const [step, setStep] = useState<'email' | 'code' | 'password'>('email')
+  const [password, setPassword] = useState('')
+
+  const withPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setBusy(true); setErr('')
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+    setBusy(false)
+    if (error) setErr("E-mail ou mot de passe incorrect.")
+  }
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
 
@@ -44,6 +53,22 @@ export function Login() {
           <div className="row">
             <button className="btn" disabled={busy}>{busy ? 'Envoi…' : 'Recevoir un code'}</button>
             <button type="button" className="btn ghost" disabled={!email.includes('@')} onClick={() => { setErr(''); setStep('code') }}>J'ai déjà un code</button>
+          </div>
+          <button type="button" className="text-link" onClick={() => { setErr(''); setStep('password') }}>Se connecter avec un mot de passe</button>
+        </form>
+      ) : step === 'password' ? (
+        <form onSubmit={withPassword} className="form">
+          <label className="field" htmlFor="email-pw">
+            <span>Votre e-mail</span>
+            <input id="email-pw" type="email" inputMode="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} />
+          </label>
+          <label className="field" htmlFor="password">
+            <span>Mot de passe</span>
+            <input id="password" type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} />
+          </label>
+          <div className="row">
+            <button className="btn" disabled={busy || !password}>{busy ? 'Connexion…' : 'Se connecter'}</button>
+            <button type="button" className="btn ghost" onClick={() => { setErr(''); setStep('email') }}>Recevoir un code à la place</button>
           </div>
         </form>
       ) : (
