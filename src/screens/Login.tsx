@@ -14,8 +14,12 @@ export function Login() {
     setBusy(true); setErr('')
     const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } })
     setBusy(false)
-    if (error) setErr("L'e-mail n'a pas pu être envoyé. Vérifiez l'adresse et réessayez dans une minute.")
-    else setStep('code')
+    if (!error) setStep('code')
+    else if (error.status === 429 || error.code === 'over_email_send_rate_limit')
+      setErr("Trop d'e-mails envoyés récemment. Supabase en autorise quelques-uns par heure : réessayez plus tard, ou saisissez le code d'un e-mail déjà reçu.")
+    else if (error.code === 'email_address_invalid')
+      setErr("Cette adresse e-mail n'est pas valide. Vérifiez l'orthographe.")
+    else setErr("L'e-mail n'a pas pu être envoyé. Vérifiez l'adresse et réessayez dans une minute.")
   }
 
   const verify = async (e: React.FormEvent) => {
@@ -37,7 +41,10 @@ export function Login() {
             <span>Votre e-mail</span>
             <input id="email" type="email" inputMode="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} />
           </label>
-          <button className="btn" disabled={busy}>{busy ? 'Envoi…' : 'Recevoir un code'}</button>
+          <div className="row">
+            <button className="btn" disabled={busy}>{busy ? 'Envoi…' : 'Recevoir un code'}</button>
+            <button type="button" className="btn ghost" disabled={!email.includes('@')} onClick={() => { setErr(''); setStep('code') }}>J'ai déjà un code</button>
+          </div>
         </form>
       ) : (
         <form onSubmit={verify} className="form">
