@@ -5,8 +5,10 @@ import { EntoureQ } from './EntoureQ'
 import { makeRound, type Question } from './generate'
 import { SuiteQ } from './SuiteQ'
 import { TableQ } from './TableQ'
+import { AlphaQ } from './AlphaQ'
+import { LETTER_NAME } from './alphabet'
 import { say, sounds } from './audio'
-import type { Exercise } from './types'
+import type { AlphabetConfig, Exercise } from './types'
 import { words } from './words'
 
 export interface AttemptDraft {
@@ -41,6 +43,8 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
   const misses = useRef(0)
   const q = round[idx]
   const name = childName?.trim()
+  const caps = exercise.type === 'alphabet' && Boolean((exercise.config as AlphabetConfig).capitals)
+  const L = (l: string) => (caps ? l.toUpperCase() : l)
 
   const prompt = useMemo(() => {
     if (!q) return { text: '', speech: '' }
@@ -48,6 +52,16 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
       return { text: <>Entoure la collection de <strong>{q.target}</strong> balles de tennis.</>, speech: `Entoure la collection de ${words(q.target)} balles de tennis.` }
     if (exercise.type === 'combien')
       return { text: <>Combien de balles de tennis ?</>, speech: 'Combien de balles de tennis ?' }
+    if (q.kind === 'alpha') {
+      if (q.skill === 'suite') return { text: <>Quelle lettre manque ?</>, speech: "Quelle lettre manque dans l'alphabet ?" }
+      if (q.skill === 'position') {
+        if (q.rel === 'entre') return { text: <>Quelle lettre vient entre <strong>{L(q.a)}</strong> et <strong>{L(q.b!)}</strong> ?</>, speech: `Quelle lettre vient entre ${LETTER_NAME[q.a]} et ${LETTER_NAME[q.b!]} ?` }
+        const w = q.rel === 'avant' ? 'juste avant' : 'juste après'
+        return { text: <>Quelle lettre vient {w} <strong>{L(q.a)}</strong> ?</>, speech: `Quelle lettre vient ${w} ${LETTER_NAME[q.a]} ?` }
+      }
+      if (q.skill === 'voyelles') return { text: <>Touche toutes les <strong>voyelles</strong>.</>, speech: 'Touche toutes les voyelles.' }
+      return { text: <>Range les mots dans l'ordre alphabétique.</>, speech: "Range les mots dans l'ordre alphabétique. Regarde bien la première lettre de chaque mot." }
+    }
     if (q.kind === 'table')
       return { text: <>Complète les cases vides du tableau.</>, speech: 'Complète les cases vides du tableau. Touche une case vide, puis écris le nombre.' }
     return { text: <>Complète la suite.</>, speech: 'Complète la suite. Trouve les nombres qui manquent.' }
@@ -66,12 +80,26 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
     if (correct) {
       sounds.good()
       if (q.kind === 'suite' || q.kind === 'table') setMsg(null)
-      if (q.kind === 'table') tries.current = 0
+      if (q.kind === 'alpha') {
+      if (q.skill === 'suite') return { text: <>Quelle lettre manque ?</>, speech: "Quelle lettre manque dans l'alphabet ?" }
+      if (q.skill === 'position') {
+        if (q.rel === 'entre') return { text: <>Quelle lettre vient entre <strong>{L(q.a)}</strong> et <strong>{L(q.b!)}</strong> ?</>, speech: `Quelle lettre vient entre ${LETTER_NAME[q.a]} et ${LETTER_NAME[q.b!]} ?` }
+        const w = q.rel === 'avant' ? 'juste avant' : 'juste après'
+        return { text: <>Quelle lettre vient {w} <strong>{L(q.a)}</strong> ?</>, speech: `Quelle lettre vient ${w} ${LETTER_NAME[q.a]} ?` }
+      }
+      if (q.skill === 'voyelles') return { text: <>Touche toutes les <strong>voyelles</strong>.</>, speech: 'Touche toutes les voyelles.' }
+      return { text: <>Range les mots dans l'ordre alphabétique.</>, speech: "Range les mots dans l'ordre alphabétique. Regarde bien la première lettre de chaque mot." }
+    }
+    if (q.kind === 'table') tries.current = 0
     } else {
       tries.current++
       misses.current++
       sounds.bad()
-      const hint = q.kind === 'table'
+      const hint = q.kind === 'alpha'
+        ? (q.skill === 'voyelles' ? "Ce n'est pas une voyelle. Cherche encore !"
+          : q.skill === 'ranger' ? "Regarde la première lettre de chaque mot. Laquelle vient en premier dans l'alphabet ?"
+          : "Récite l'alphabet dans ta tête : a, b, c, d…")
+        : q.kind === 'table'
         ? 'Additionne le nombre de la ligne et celui de la colonne.'
         : q.kind === 'suite'
         ? `Regarde de combien on avance à chaque fois.`
@@ -90,6 +118,12 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
       const t = q.target, p = Math.floor(t / 10), u = t % 10
       sub = `${p} paquet${p > 1 ? 's' : ''} de 10${u ? ` et ${u} balle${u > 1 ? 's' : ''}` : ''} = ${t} (${words(t)})`
       say(`${words(t)} balles ! ${first ? praise : ''}`)
+    } else if (q.kind === 'alpha') {
+      if (q.skill === 'suite') sub = q.seq.map(L).join('  ')
+      else if (q.skill === 'position') sub = q.rel === 'entre' ? `Entre ${L(q.a)} et ${L(q.b!)}, il y a ${L(q.answer)}.` : q.rel === 'avant' ? `Avant ${L(q.a)}, il y a ${L(q.answer)}.` : `Après ${L(q.a)}, il y a ${L(q.answer)}.`
+      else if (q.skill === 'voyelles') sub = `Les voyelles : ${['a', 'e', 'i', 'o', 'u', 'y'].map(L).join(' ')}`
+      else { const o = [...q.words].sort((a, b) => a[0].localeCompare(b[0])); sub = `${o.join(', ')} (${o.map(w => L(w[0])).join(', ')})` }
+      say(praise)
     } else if (q.kind === 'table') {
       sub = first ? 'Tableau complet, sans une seule erreur !' : `Tableau complet ! ${misses.current} erreur${misses.current > 1 ? 's' : ''} corrigée${misses.current > 1 ? 's' : ''}.`
       say(praise)
@@ -165,6 +199,9 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
           )}
           {exercise.type === 'combien' && q.kind === 'collection' && (
             <CombienQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
+          )}
+          {q.kind === 'alpha' && (
+            <AlphaQ key={idx} q={q} capitals={caps} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
           )}
           {q.kind === 'table' && (
             <TableQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />

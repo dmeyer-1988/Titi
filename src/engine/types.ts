@@ -1,6 +1,6 @@
 // Types partagés entre le moteur, la base et les écrans.
 
-export type ExerciseType = 'entoure' | 'combien' | 'suite' | 'table'
+export type ExerciseType = 'entoure' | 'combien' | 'suite' | 'table' | 'alphabet'
 
 /** Matières affichées sur l'accueil. La matière d'un exercice découle de son type. */
 export type Subject = 'maths' | 'francais'
@@ -15,6 +15,7 @@ export const TYPE_SUBJECT: Record<ExerciseType, Subject> = {
   combien: 'maths',
   suite: 'maths',
   table: 'maths',
+  alphabet: 'francais',
 }
 
 /** "Entoure la collection de N balles" et "Combien de balles ?" */
@@ -51,7 +52,24 @@ export interface TableConfig {
   questions: number
 }
 
-export type ExerciseConfig = CollectionConfig | SuiteConfig | TableConfig
+/** Alphabet : ordre des lettres, voyelles, ranger des mots. */
+export type AlphaSkill = 'suite' | 'position' | 'voyelles' | 'ranger'
+export interface AlphabetConfig {
+  skills: AlphaSkill[]
+  /** nombre de mots à ranger (3 ou 4) */
+  words: number
+  capitals: boolean
+  questions: number
+}
+
+export const SKILL_LABEL: Record<AlphaSkill, string> = {
+  suite: 'La lettre qui manque',
+  position: 'Avant, après, entre',
+  voyelles: 'Les voyelles',
+  ranger: 'Ranger des mots',
+}
+
+export type ExerciseConfig = CollectionConfig | SuiteConfig | TableConfig | AlphabetConfig
 
 export interface Exercise {
   id: string
@@ -86,6 +104,7 @@ export const TYPE_LABEL: Record<ExerciseType, string> = {
   combien: 'Combien ?',
   suite: 'Complète la suite',
   table: "Tableau d'addition",
+  alphabet: "L'alphabet",
 }
 
 export const TYPE_HELP: Record<ExerciseType, string> = {
@@ -93,13 +112,22 @@ export const TYPE_HELP: Record<ExerciseType, string> = {
   combien: "L'enfant compte une collection (paquets de 10 et balles seules) et choisit le bon nombre.",
   suite: "L'enfant complète les cases vides d'une suite de nombres avec un clavier.",
   table: "L'enfant complète les cases vides d'un tableau d'addition. En mode mixte, il retrouve aussi des nombres des en-têtes à partir d'une somme.",
+  alphabet: "Lettre qui manque dans l'alphabet, lettre avant / après / entre, trouver les voyelles, ranger des mots selon l'ordre alphabétique (1re lettre). Les questions sont tirées au hasard parmi les parties choisies.",
 }
 
 export function defaultConfig(type: ExerciseType): ExerciseConfig {
   if (type === 'suite') return { min: 10, max: 100, step: 10, length: 6, blanks: 1, direction: 'up', questions: 10 }
   if (type === 'table') return { min: 2, max: 9, size: 4, mode: 'sommes', questions: 2 }
+  if (type === 'alphabet') return { skills: ['suite', 'position', 'voyelles', 'ranger'], words: 3, capitals: false, questions: 12 }
   return { min: 10, max: 90, onlyTens: true, questions: 10 }
 }
+
+export const ALPHABET_SEED: Omit<Exercise, 'id'>[] = [
+  { type: 'alphabet', title: 'Entraînement au test', config: { skills: ['suite', 'position', 'voyelles', 'ranger'], words: 3, capitals: false, questions: 12 }, active: true, position: 0 },
+  { type: 'alphabet', title: "L'ordre des lettres", config: { skills: ['suite', 'position'], words: 3, capitals: false, questions: 10 }, active: true, position: 1 },
+  { type: 'alphabet', title: 'Les voyelles', config: { skills: ['voyelles'], words: 3, capitals: false, questions: 6 }, active: true, position: 2 },
+  { type: 'alphabet', title: 'Ranger les mots', config: { skills: ['ranger'], words: 3, capitals: false, questions: 8 }, active: true, position: 3 },
+]
 
 export const SEED_EXERCISES: Omit<Exercise, 'id'>[] = [
   { type: 'entoure', title: 'Les balles — dizaines', config: { min: 10, max: 90, onlyTens: true, questions: 10 }, active: true, position: 0 },
@@ -107,4 +135,5 @@ export const SEED_EXERCISES: Omit<Exercise, 'id'>[] = [
   { type: 'suite', title: 'De 10 en 10', config: { min: 10, max: 100, step: 10, length: 6, blanks: 1, direction: 'up', questions: 10 }, active: true, position: 2 },
   { type: 'table', title: 'Les nombres manquants', config: { min: 2, max: 9, size: 4, mode: 'sommes', questions: 2 }, active: true, position: 3 },
   { type: 'table', title: 'Les nombres manquants — défi', config: { min: 2, max: 9, size: 4, mode: 'mixte', questions: 2 }, active: true, position: 4 },
+  ...ALPHABET_SEED.map((e, i) => ({ ...e, position: 5 + i })),
 ]

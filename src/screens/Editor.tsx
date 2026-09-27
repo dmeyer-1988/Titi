@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Runner } from '../engine/Runner'
-import { defaultConfig, TYPE_HELP, TYPE_LABEL, type CollectionConfig, type Exercise, type ExerciseType, type SuiteConfig, type TableConfig } from '../engine/types'
+import { defaultConfig, TYPE_HELP, TYPE_LABEL, type AlphabetConfig, type AlphaSkill, type CollectionConfig, type Exercise, type ExerciseType, type SuiteConfig, type TableConfig, SKILL_LABEL, TYPE_SUBJECT, SUBJECTS } from '../engine/types'
 import { saveExercise } from '../lib/store'
 import { Thumb } from './Home'
 
@@ -34,10 +34,14 @@ function Chips<T extends string | number>({ label, value, options, onChange }: {
   )
 }
 
-type AnyConfig = CollectionConfig | SuiteConfig | TableConfig
+type AnyConfig = CollectionConfig | SuiteConfig | TableConfig | AlphabetConfig
 const family = (t: ExerciseType) => (t === 'entoure' || t === 'combien' ? 'collection' : t)
 
 function autoTitle(type: ExerciseType, c: AnyConfig) {
+  if (type === 'alphabet') {
+    const k = (c as AlphabetConfig).skills
+    return k.length === 1 ? SKILL_LABEL[k[0]] : k.length >= 4 ? 'Entraînement au test' : "L'alphabet"
+  }
   if (type === 'table') {
     const t = c as TableConfig
     return t.mode === 'mixte' ? 'Les nombres manquants — défi' : 'Les nombres manquants'
@@ -69,7 +73,7 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
     setType(t)
     if (family(t) !== family(type)) setConfig(defaultConfig(t))
   }
-  const upd = (patch: Partial<CollectionConfig & SuiteConfig & TableConfig>) => setConfig(c => ({ ...c, ...patch }) as AnyConfig)
+  const upd = (patch: Partial<CollectionConfig & SuiteConfig & TableConfig & AlphabetConfig>) => setConfig(c => ({ ...c, ...patch }) as AnyConfig)
 
   const save = async () => {
     setBusy(true); setErr('')
@@ -80,8 +84,8 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
 
   if (testing) return <Runner exercise={draft} test onExit={() => setTesting(false)} />
 
-  const c = config as CollectionConfig & SuiteConfig & TableConfig
-  const invalid = c.min >= c.max
+  const c = config as CollectionConfig & SuiteConfig & TableConfig & AlphabetConfig
+  const invalid = type !== 'alphabet' && c.min >= c.max
 
   return (
     <div className="editor">
@@ -90,18 +94,44 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
         <button className="btn ghost small" onClick={onClose}>Annuler</button>
       </div>
 
-      <div className="types">
-        {(['entoure', 'combien', 'suite', 'table'] as ExerciseType[]).map(t => (
-          <button key={t} className={'type-card' + (t === type ? ' on' : '')} onClick={() => changeType(t)} aria-pressed={t === type}>
-            <Thumb ex={{ ...draft, type: t, config: family(t) === family(type) ? config : defaultConfig(t) }} />
-            <b>{TYPE_LABEL[t]}</b>
-          </button>
-        ))}
-      </div>
+      {SUBJECTS.map(sub => (
+        <div key={sub.id}>
+          <div className="types-label">{sub.label}</div>
+          <div className="types">
+            {(['entoure', 'combien', 'suite', 'table', 'alphabet'] as ExerciseType[]).filter(t => TYPE_SUBJECT[t] === sub.id).map(t => (
+              <button key={t} className={'type-card' + (t === type ? ' on' : '')} onClick={() => changeType(t)} aria-pressed={t === type}>
+                <Thumb ex={{ ...draft, type: t, config: family(t) === family(type) ? config : defaultConfig(t) }} />
+                <b>{TYPE_LABEL[t]}</b>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
       <p className="help">{TYPE_HELP[type]}</p>
 
       <div className="form-grid">
-        {type === 'table' ? (
+        {type === 'alphabet' ? (
+          <>
+            <div className="field wide">
+              <span className="label">Parties à travailler</span>
+              <div className="seg">
+                {(['suite', 'position', 'voyelles', 'ranger'] as AlphaSkill[]).map(k => {
+                  const on = c.skills.includes(k)
+                  return (
+                    <button type="button" key={k} aria-pressed={on} disabled={on && c.skills.length === 1}
+                      onClick={() => upd({ skills: on ? c.skills.filter(x => x !== k) : [...c.skills, k] })}>
+                      {SKILL_LABEL[k]}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <Chips label="Mots à ranger" value={c.words} onChange={v => upd({ words: v })}
+              options={[{ v: 3, l: '3 mots' }, { v: 4, l: '4 mots' }, { v: 5, l: '5 mots' }]} />
+            <Chips label="Lettres" value={c.capitals ? 1 : 0} onChange={v => upd({ capitals: v === 1 })}
+              options={[{ v: 0, l: 'minuscules' }, { v: 1, l: 'MAJUSCULES' }]} />
+          </>
+        ) : type === 'table' ? (
           <>
             <Chips label="Cases à trouver" value={c.mode} onChange={v => upd({ mode: v })}
               options={[{ v: 'sommes', l: 'Les sommes' }, { v: 'mixte', l: 'Sommes + en-têtes (défi)' }]} />

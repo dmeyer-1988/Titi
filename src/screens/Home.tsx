@@ -3,6 +3,15 @@ import type { Child, Exercise, Subject } from '../engine/types'
 import { SUBJECTS, TYPE_LABEL, TYPE_SUBJECT } from '../engine/types'
 
 export function Thumb({ ex }: { ex: Exercise }) {
+  if (ex.type === 'alphabet') {
+    const k = (ex.config as { skills?: string[] }).skills || []
+    const letters = k.length === 1 && k[0] === 'voyelles' ? ['a', 'b', 'e'] : k.length === 1 && k[0] === 'ranger' ? ['arbre'] : ['a', 'b', '']
+    return (
+      <div className="thumb alpha-thumb" aria-hidden="true">
+        {letters.map((l, i) => <span key={i} className={(l === '' ? 'empty' : '') + (l.length > 1 ? ' word' : '') + (k.length === 1 && k[0] === 'voyelles' && l !== 'b' ? ' on' : '')}>{l}</span>)}
+      </div>
+    )
+  }
   if (ex.type === 'table') {
     const cells = ['+', '3', '7', '6', '9', '', '4', '', '11']
     return (

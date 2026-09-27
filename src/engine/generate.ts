@@ -1,4 +1,5 @@
-import type { CollectionConfig, Exercise, SuiteConfig, TableConfig } from './types'
+import type { AlphabetConfig, CollectionConfig, Exercise, SuiteConfig, TableConfig } from './types'
+import { alphaKey, alphaQuestion, alphaSkills, type AlphaQuestion } from './alphabet'
 
 export interface CollectionQuestion {
   kind: 'collection'
@@ -22,7 +23,7 @@ export interface TableQuestion {
   /** cases à compléter par l'enfant */
   blanks: string[]
 }
-export type Question = CollectionQuestion | SuiteQuestion | TableQuestion
+export type Question = CollectionQuestion | SuiteQuestion | TableQuestion | AlphaQuestion
 
 export const cellKey = (r: number, c: number) => `${r},${c}`
 export function cellValue(q: TableQuestion, r: number, c: number): number {
@@ -132,12 +133,17 @@ export function makeRound(ex: Exercise): Question[] {
   const n = clamp((ex.config as { questions?: number }).questions ?? 10, ex.type === 'table' ? 1 : 3, 20)
   const out: Question[] = []
   const seen = new Set<string>()
+  // Alphabet : les parties choisies tournent (suite, position, voyelles, ranger…), dans un ordre mélangé.
+  const skillOrder = ex.type === 'alphabet'
+    ? shuffle(Array.from({ length: n }, (_, i) => alphaSkills(ex.config as AlphabetConfig)[i % alphaSkills(ex.config as AlphabetConfig).length]))
+    : []
   for (let i = 0; i < n; i++) {
     let q: Question
     let guard = 0
     do {
       if (ex.type === 'suite') q = suiteQuestion(ex.config as SuiteConfig)
       else if (ex.type === 'table') q = tableQuestion(ex.config as TableConfig)
+      else if (ex.type === 'alphabet') q = alphaQuestion(skillOrder[i], ex.config as AlphabetConfig)
       else {
         const cfg = ex.config as CollectionConfig
         const t = collectionTarget(cfg)
@@ -152,6 +158,7 @@ export function makeRound(ex: Exercise): Question[] {
 
 function key(q: Question) {
   if (q.kind === 'collection') return 'c' + q.target
+  if (q.kind === 'alpha') return alphaKey(q)
   if (q.kind === 'table') return 't' + q.rows.join(',') + '|' + q.cols.join(',')
   return 's' + q.seq.join(',') + '|' + q.blanks.join(',')
 }
