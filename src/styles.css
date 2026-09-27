@@ -50,9 +50,9 @@ code { font-size: .9em; background: var(--tint); padding: 1px 5px; border-radius
     linear-gradient(var(--line), var(--line)) 22px 0 / 4px 100% no-repeat,
     linear-gradient(var(--line), var(--line)) 0 18px / 100% 4px no-repeat,
     var(--court);
-  user-select: none;
-  -webkit-user-select: none;
 }
+/* Pas de sélection de texte pendant le jeu, mais jamais sur un parent de champ de saisie (bug Safari iOS). */
+.runner, .games, .keypad, .pin-dots, .answers, .grid { user-select: none; -webkit-user-select: none; }
 input { user-select: text; -webkit-user-select: text; }
 
 .sheet {

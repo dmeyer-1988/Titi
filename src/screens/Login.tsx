@@ -7,6 +7,7 @@ export function Login() {
   const [code, setCode] = useState('')
   const [step, setStep] = useState<'email' | 'code' | 'password'>('email')
   const [password, setPassword] = useState('')
+  const [letters, setLetters] = useState(false)
 
   const withPassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,15 +74,17 @@ export function Login() {
         </form>
       ) : (
         <form onSubmit={verify} className="form">
-          <p>Un code à 6 chiffres a été envoyé à <b>{email}</b>.</p>
+          <p>Saisissez le code à 6 chiffres reçu à <b>{email}</b>.</p>
           <label className="field" htmlFor="code">
             <span>Code reçu par e-mail</span>
-            <input id="code" className="code-input" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} />
+            <input id="code" className="code-input" type="text" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={e => { const v = e.target.value; setCode(v.replace(/\D/g, '').slice(0, 6)); setLetters(/[^\d\s]/.test(v)) }} />
+            {letters && <small className="error">Le code ne contient que des chiffres. Pour un mot de passe, utilisez le lien ci-dessous.</small>}
           </label>
           <div className="row">
             <button className="btn" disabled={busy || code.length !== 6}>{busy ? 'Vérification…' : 'Se connecter'}</button>
             <button type="button" className="btn ghost" onClick={() => { setStep('email'); setCode('') }}>Changer d'e-mail</button>
           </div>
+          <button type="button" className="text-link" onClick={() => { setErr(''); setStep('password') }}>Se connecter avec un mot de passe</button>
         </form>
       )}
       {err && <p className="error" role="alert">{err}</p>}
