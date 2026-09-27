@@ -52,7 +52,7 @@ create index if not exists attempts_exercise_idx on public.attempts (exercise_id
 create index if not exists exercises_owner_idx on public.exercises (owner, position);
 
 create or replace function public.touch_updated_at() returns trigger
-language plpgsql as $$ begin new.updated_at := now(); return new; end $$;
+language plpgsql set search_path = '' as $$ begin new.updated_at := now(); return new; end $$;
 
 drop trigger if exists exercises_touch on public.exercises;
 create trigger exercises_touch before update on public.exercises
