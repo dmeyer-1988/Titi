@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { BallDefs } from './engine/Balls'
 import { Runner } from './engine/Runner'
-import type { Exercise } from './engine/types'
+import type { Exercise, Subject } from './engine/types'
 import { fetchAttempts, fetchFamily, flushQueue, readCache, recordAttempt, type Family } from './lib/store'
 import { configured, supabase } from './lib/supabase'
 import { Home } from './screens/Home'
@@ -23,6 +23,7 @@ export default function App() {
   const [childId, setChildId] = useState<string | null>(() => { try { return localStorage.getItem(CHILD_KEY) } catch { return null } })
   const [stars, setStars] = useState<Record<string, number>>({})
   const [offline, setOffline] = useState(!navigator.onLine)
+  const [subject, setSubject] = useState<Subject | null>(null)
 
   const uid = session?.user.id
 
@@ -146,6 +147,8 @@ export default function App() {
         exercises={family.exercises}
         stars={stars}
         offline={offline}
+        subject={subject}
+        onSubject={setSubject}
         onPickChild={pickChild}
         onPlay={ex => setView({ name: 'play', ex })}
         onParent={() => setView({ name: 'pin' })}

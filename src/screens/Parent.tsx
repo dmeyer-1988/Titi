@@ -112,6 +112,7 @@ function ExerciseList({ exercises, onChanged, onEdit }: Props & { onEdit: (e: Ex
 
 function describe(ex: Exercise) {
   const c = ex.config as unknown as Record<string, number | boolean | string>
+  if (ex.type === 'table') return `${c.size} × ${c.size}, nombres ${c.min}–${c.max}, ${c.mode === 'mixte' ? 'avec en-têtes à trouver' : 'sommes à trouver'}`
   if (ex.type === 'suite') return `de ${c.step} en ${c.step}, ${c.min}–${c.max}, ${c.blanks} case${Number(c.blanks) > 1 ? 's' : ''} vide${Number(c.blanks) > 1 ? 's' : ''}`
   return `${c.onlyTens ? 'dizaines' : 'dizaines + unités'}, ${c.min}–${c.max}`
 }

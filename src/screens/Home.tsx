@@ -1,8 +1,16 @@
 import { Pack } from '../engine/Balls'
-import type { Child, Exercise } from '../engine/types'
-import { TYPE_LABEL } from '../engine/types'
+import type { Child, Exercise, Subject } from '../engine/types'
+import { SUBJECTS, TYPE_LABEL, TYPE_SUBJECT } from '../engine/types'
 
 export function Thumb({ ex }: { ex: Exercise }) {
+  if (ex.type === 'table') {
+    const cells = ['+', '3', '7', '6', '9', '', '4', '', '11']
+    return (
+      <div className="thumb table-thumb" aria-hidden="true">
+        {cells.map((t, i) => <span key={i} className={(i < 3 || i % 3 === 0 ? 'h' : '') + (t === '' ? ' empty' : '')}>{t}</span>)}
+      </div>
+    )
+  }
   if (ex.type === 'suite') {
     const s = (ex.config as { step: number }).step || 10
     return (
@@ -20,26 +28,63 @@ export function Thumb({ ex }: { ex: Exercise }) {
   )
 }
 
+/** Illustration de chaque matière, dessinée avec les éléments des fiches. */
+function SubjectArt({ id }: { id: Subject }) {
+  if (id === 'maths') {
+    return (
+      <div className="subject-art maths" aria-hidden="true">
+        <Pack />
+        <span className="op">+</span>
+        <span className="num">7</span>
+      </div>
+    )
+  }
+  return (
+    <div className="subject-art francais" aria-hidden="true">
+      <span className="letter">A</span><span className="letter">b</span><span className="letter">c</span>
+    </div>
+  )
+}
+
 interface Props {
   children: Child[]
   child: Child
   exercises: Exercise[]
   stars: Record<string, number>
   offline: boolean
+  subject: Subject | null
+  onSubject: (s: Subject | null) => void
   onPickChild: (id: string) => void
   onPlay: (ex: Exercise) => void
   onParent: () => void
 }
 
-export function Home({ children, child, exercises, stars, offline, onPickChild, onPlay, onParent }: Props) {
+export function Home({ children, child, exercises, stars, offline, subject, onSubject, onPickChild, onPlay, onParent }: Props) {
   const active = exercises.filter(e => e.active)
   const total = Object.values(stars).reduce((a, b) => a + b, 0)
+  const bySubject = (s: Subject) => active.filter(e => TYPE_SUBJECT[e.type] === s)
+  const starsFor = (list: Exercise[]) => list.reduce((a, e) => a + (stars[e.id] || 0), 0)
+  const current = subject ? SUBJECTS.find(s => s.id === subject)! : null
+  const games = subject ? bySubject(subject) : []
+
   return (
     <div className="sheet">
       <header className="home-head">
         <div>
-          <div className="eyebrow">4<sup>e</sup> / <b>Nombres</b></div>
-          <h1>Salut {child.name} !</h1>
+          {current ? (
+            <>
+              <button className="back" onClick={() => onSubject(null)}>
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 5l-7 7 7 7" /></svg>
+                Matières
+              </button>
+              <h1 className={'subject-title ' + current.id}>{current.label}</h1>
+            </>
+          ) : (
+            <>
+              <div className="eyebrow">4<sup>e</sup> HarmoS</div>
+              <h1>Salut {child.name} !</h1>
+            </>
+          )}
         </div>
         <div className="total-stars" aria-label={`${total} étoiles`}>
           <svg className="ball" aria-hidden="true"><use href="#ball" /></svg>
@@ -47,7 +92,7 @@ export function Home({ children, child, exercises, stars, offline, onPickChild, 
         </div>
       </header>
 
-      {children.length > 1 && (
+      {!current && children.length > 1 && (
         <div className="seg kids" role="group" aria-label="Qui joue ?">
           {children.map(c => (
             <button key={c.id} aria-pressed={c.id === child.id} onClick={() => onPickChild(c.id)}>{c.name}</button>
@@ -55,22 +100,50 @@ export function Home({ children, child, exercises, stars, offline, onPickChild, 
         </div>
       )}
 
-      <p className="lead">Choisis un jeu.</p>
-      {active.length === 0 ? (
-        <p className="empty-note">Pas encore de jeu. Demande à papa ou maman d'en ajouter un.</p>
+      {!current ? (
+        <>
+          <p className="lead">Qu'est-ce qu'on travaille aujourd'hui ?</p>
+          <div className="subjects">
+            {SUBJECTS.map(s => {
+              const list = bySubject(s.id)
+              const empty = list.length === 0
+              return (
+                <button key={s.id} className={'subject ' + s.id} disabled={empty} onClick={() => onSubject(s.id)}>
+                  <SubjectArt id={s.id} />
+                  <span className="subject-name">{s.label}</span>
+                  <span className="subject-meta">
+                    {empty ? <span>Bientôt</span> : (
+                      <>
+                        <span>{list.length} jeu{list.length > 1 ? 'x' : ''}</span>
+                        <span className="mini-stars"><svg className="ball" aria-hidden="true"><use href="#ball" /></svg>{starsFor(list)}</span>
+                      </>
+                    )}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </>
       ) : (
-        <div className="games">
-          {active.map(ex => (
-            <button key={ex.id} className="game" onClick={() => onPlay(ex)}>
-              <Thumb ex={ex} />
-              <span className="game-title">{ex.title}</span>
-              <span className="game-meta">
-                <span className="type">{TYPE_LABEL[ex.type]}</span>
-                <span className="mini-stars"><svg className="ball" aria-hidden="true"><use href="#ball" /></svg>{stars[ex.id] || 0}</span>
-              </span>
-            </button>
-          ))}
-        </div>
+        <>
+          <p className="lead">Choisis un jeu.</p>
+          {games.length === 0 ? (
+            <p className="empty-note">Pas encore de jeu ici. Demande à papa ou maman d'en ajouter un.</p>
+          ) : (
+            <div className="games">
+              {games.map(ex => (
+                <button key={ex.id} className="game" onClick={() => onPlay(ex)}>
+                  <Thumb ex={ex} />
+                  <span className="game-title">{ex.title}</span>
+                  <span className="game-meta">
+                    <span className="type">{TYPE_LABEL[ex.type]}</span>
+                    <span className="mini-stars"><svg className="ball" aria-hidden="true"><use href="#ball" /></svg>{stars[ex.id] || 0}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <footer className="home-foot">

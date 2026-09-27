@@ -1,4 +1,4 @@
-import type { CollectionConfig, Exercise, SuiteConfig } from './types'
+import type { CollectionConfig, Exercise, SuiteConfig, TableConfig } from './types'
 
 export interface CollectionQuestion {
   kind: 'collection'
@@ -11,7 +11,25 @@ export interface SuiteQuestion {
   blanks: number[]
   step: number
 }
-export type Question = CollectionQuestion | SuiteQuestion
+/**
+ * Tableau d'addition. Les cases sont repérées par "r,c" :
+ * r = -1 pour la ligne d'en-tête, c = -1 pour la colonne d'en-tête.
+ */
+export interface TableQuestion {
+  kind: 'table'
+  rows: number[]
+  cols: number[]
+  /** cases à compléter par l'enfant */
+  blanks: string[]
+}
+export type Question = CollectionQuestion | SuiteQuestion | TableQuestion
+
+export const cellKey = (r: number, c: number) => `${r},${c}`
+export function cellValue(q: TableQuestion, r: number, c: number): number {
+  if (r === -1) return q.cols[c]
+  if (c === -1) return q.rows[r]
+  return q.rows[r] + q.cols[c]
+}
 
 const rnd = (a: number, b: number) => a + Math.floor(Math.random() * (b - a + 1))
 export function shuffle<T>(a: T[]): T[] {
@@ -73,8 +91,45 @@ function suiteQuestion(c: SuiteConfig): SuiteQuestion {
   return { kind: 'suite', seq, blanks, step }
 }
 
+function distinct(n: number, lo: number, hi: number): number[] {
+  const pool = shuffle(Array.from({ length: hi - lo + 1 }, (_, i) => lo + i))
+  const out = pool.slice(0, n)
+  // S'il n'y a pas assez de nombres différents, on complète avec des répétitions.
+  while (out.length < n) out.push(rnd(lo, hi))
+  return out
+}
+
+function tableQuestion(c: TableConfig): TableQuestion {
+  const size = clamp(c.size, 2, 5)
+  const lo = clamp(c.min, 0, 50), hi = clamp(c.max, lo + 1, 50)
+  const rows = distinct(size, lo, hi), cols = distinct(size, lo, hi)
+  const all: string[] = []
+  for (let r = 0; r < size; r++) for (let k = 0; k < size; k++) all.push(cellKey(r, k))
+
+  if (c.mode !== 'mixte') return { kind: 'table', rows, cols, blanks: all }
+
+  // Mode mixte (comme les derniers tableaux de la fiche) :
+  // 1 ou 2 en-têtes de ligne et 1 ou 2 en-têtes de colonne cachés,
+  // chacun retrouvable grâce à une somme donnée avec un en-tête visible.
+  const hideR = shuffle(Array.from({ length: size }, (_, i) => i)).slice(0, rnd(1, Math.max(1, size - 2)))
+  const hideC = shuffle(Array.from({ length: size }, (_, i) => i)).slice(0, rnd(1, Math.max(1, size - 2)))
+  const visR = rows.map((_, i) => i).filter(i => !hideR.includes(i))
+  const visC = cols.map((_, i) => i).filter(i => !hideC.includes(i))
+  const given = new Set<string>()
+  for (const r of hideR) given.add(cellKey(r, visC[rnd(0, visC.length - 1)]))
+  for (const k of hideC) given.add(cellKey(visR[rnd(0, visR.length - 1)], k))
+  // Quelques sommes données en plus, pour ressembler à la fiche.
+  for (const key of shuffle([...all]).slice(0, Math.floor(size / 2))) given.add(key)
+  const blanks = [
+    ...hideC.map(k => cellKey(-1, k)),
+    ...hideR.map(r => cellKey(r, -1)),
+    ...all.filter(k => !given.has(k)),
+  ]
+  return { kind: 'table', rows, cols, blanks }
+}
+
 export function makeRound(ex: Exercise): Question[] {
-  const n = clamp((ex.config as { questions?: number }).questions ?? 10, 3, 20)
+  const n = clamp((ex.config as { questions?: number }).questions ?? 10, ex.type === 'table' ? 1 : 3, 20)
   const out: Question[] = []
   const seen = new Set<string>()
   for (let i = 0; i < n; i++) {
@@ -82,6 +137,7 @@ export function makeRound(ex: Exercise): Question[] {
     let guard = 0
     do {
       if (ex.type === 'suite') q = suiteQuestion(ex.config as SuiteConfig)
+      else if (ex.type === 'table') q = tableQuestion(ex.config as TableConfig)
       else {
         const cfg = ex.config as CollectionConfig
         const t = collectionTarget(cfg)
@@ -95,5 +151,7 @@ export function makeRound(ex: Exercise): Question[] {
 }
 
 function key(q: Question) {
-  return q.kind === 'collection' ? 'c' + q.target : 's' + q.seq.join(',') + '|' + q.blanks.join(',')
+  if (q.kind === 'collection') return 'c' + q.target
+  if (q.kind === 'table') return 't' + q.rows.join(',') + '|' + q.cols.join(',')
+  return 's' + q.seq.join(',') + '|' + q.blanks.join(',')
 }

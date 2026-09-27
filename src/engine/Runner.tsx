@@ -4,6 +4,7 @@ import { CombienQ } from './CombienQ'
 import { EntoureQ } from './EntoureQ'
 import { makeRound, type Question } from './generate'
 import { SuiteQ } from './SuiteQ'
+import { TableQ } from './TableQ'
 import { say, sounds } from './audio'
 import type { Exercise } from './types'
 import { words } from './words'
@@ -35,7 +36,9 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
   const [results, setResults] = useState<boolean[]>([])
   const [phase, setPhase] = useState<'play' | 'solved' | 'end'>('play')
   const [msg, setMsg] = useState<{ kind: 'ok' | 'no'; title: string; sub?: string } | null>(null)
+  // tries = erreurs sur la case en cours ; misses = erreurs sur toute la question (pour l'étoile)
   const tries = useRef(0)
+  const misses = useRef(0)
   const q = round[idx]
   const name = childName?.trim()
 
@@ -45,6 +48,8 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
       return { text: <>Entoure la collection de <strong>{q.target}</strong> balles de tennis.</>, speech: `Entoure la collection de ${words(q.target)} balles de tennis.` }
     if (exercise.type === 'combien')
       return { text: <>Combien de balles de tennis ?</>, speech: 'Combien de balles de tennis ?' }
+    if (q.kind === 'table')
+      return { text: <>Complète les cases vides du tableau.</>, speech: 'Complète les cases vides du tableau. Touche une case vide, puis écris le nombre.' }
     return { text: <>Complète la suite.</>, speech: 'Complète la suite. Trouve les nombres qui manquent.' }
   }, [q, exercise.type])
 
@@ -60,11 +65,15 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
     }
     if (correct) {
       sounds.good()
-      if (q.kind === 'suite') setMsg(null)
+      if (q.kind === 'suite' || q.kind === 'table') setMsg(null)
+      if (q.kind === 'table') tries.current = 0
     } else {
       tries.current++
+      misses.current++
       sounds.bad()
-      const hint = q.kind === 'suite'
+      const hint = q.kind === 'table'
+        ? 'Additionne le nombre de la ligne et celui de la colonne.'
+        : q.kind === 'suite'
         ? `Regarde de combien on avance à chaque fois.`
         : exercise.type === 'entoure' ? 'Compte les paquets de 10.' : "Compte d'abord les paquets de 10, puis les balles seules."
       setMsg({ kind: 'no', title: 'Essaie encore !', sub: hint })
@@ -72,7 +81,7 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
   }
 
   const onSolved = () => {
-    const first = tries.current === 0
+    const first = misses.current === 0
     setResults(r => { const x = [...r]; x[idx] = first; return x })
     setPhase('solved')
     const praise = (first ? PRAISE[Math.floor(Math.random() * PRAISE.length)] : 'Bien joué') + (name ? ' ' + name : '') + ' !'
@@ -81,6 +90,9 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
       const t = q.target, p = Math.floor(t / 10), u = t % 10
       sub = `${p} paquet${p > 1 ? 's' : ''} de 10${u ? ` et ${u} balle${u > 1 ? 's' : ''}` : ''} = ${t} (${words(t)})`
       say(`${words(t)} balles ! ${first ? praise : ''}`)
+    } else if (q.kind === 'table') {
+      sub = first ? 'Tableau complet, sans une seule erreur !' : `Tableau complet ! ${misses.current} erreur${misses.current > 1 ? 's' : ''} corrigée${misses.current > 1 ? 's' : ''}.`
+      say(praise)
     } else {
       const down = q.seq[1] < q.seq[0]
       sub = `On ${down ? 'recule' : 'avance'} de ${q.step} à chaque fois.`
@@ -91,6 +103,7 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
 
   const next = () => {
     tries.current = 0
+    misses.current = 0
     setMsg(null)
     if (idx + 1 < round.length) { setIdx(idx + 1); setPhase('play') }
     else {
@@ -102,7 +115,7 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
   }
 
   const restart = () => {
-    setRound(makeRound(exercise)); setIdx(0); setResults([]); setPhase('play'); setMsg(null); tries.current = 0
+    setRound(makeRound(exercise)); setIdx(0); setResults([]); setPhase('play'); setMsg(null); tries.current = 0; misses.current = 0
   }
 
   const stars = results.filter(Boolean).length
@@ -152,6 +165,9 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
           )}
           {exercise.type === 'combien' && q.kind === 'collection' && (
             <CombienQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
+          )}
+          {q.kind === 'table' && (
+            <TableQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
           )}
           {q.kind === 'suite' && (
             <SuiteQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Runner } from '../engine/Runner'
-import { defaultConfig, TYPE_HELP, TYPE_LABEL, type CollectionConfig, type Exercise, type ExerciseType, type SuiteConfig } from '../engine/types'
+import { defaultConfig, TYPE_HELP, TYPE_LABEL, type CollectionConfig, type Exercise, type ExerciseType, type SuiteConfig, type TableConfig } from '../engine/types'
 import { saveExercise } from '../lib/store'
 import { Thumb } from './Home'
 
@@ -34,7 +34,14 @@ function Chips<T extends string | number>({ label, value, options, onChange }: {
   )
 }
 
-function autoTitle(type: ExerciseType, c: CollectionConfig | SuiteConfig) {
+type AnyConfig = CollectionConfig | SuiteConfig | TableConfig
+const family = (t: ExerciseType) => (t === 'entoure' || t === 'combien' ? 'collection' : t)
+
+function autoTitle(type: ExerciseType, c: AnyConfig) {
+  if (type === 'table') {
+    const t = c as TableConfig
+    return t.mode === 'mixte' ? 'Les nombres manquants — défi' : 'Les nombres manquants'
+  }
   if (type === 'suite') {
     const s = c as SuiteConfig
     return `De ${s.step} en ${s.step}` + (s.direction === 'down' ? ' (à rebours)' : '')
@@ -48,7 +55,7 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
   initial?: Exercise; nextPosition: number; onClose: () => void; onSaved: () => void
 }) {
   const [type, setType] = useState<ExerciseType>(initial?.type ?? 'entoure')
-  const [config, setConfig] = useState<CollectionConfig | SuiteConfig>(initial?.config ?? defaultConfig('entoure'))
+  const [config, setConfig] = useState<AnyConfig>(initial?.config ?? defaultConfig('entoure'))
   const [title, setTitle] = useState(initial?.title ?? '')
   const [titleTouched, setTitleTouched] = useState(Boolean(initial))
   const [testing, setTesting] = useState(false)
@@ -60,9 +67,9 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
 
   const changeType = (t: ExerciseType) => {
     setType(t)
-    if ((t === 'suite') !== (type === 'suite')) setConfig(defaultConfig(t))
+    if (family(t) !== family(type)) setConfig(defaultConfig(t))
   }
-  const upd = (patch: Partial<CollectionConfig & SuiteConfig>) => setConfig(c => ({ ...c, ...patch }) as CollectionConfig | SuiteConfig)
+  const upd = (patch: Partial<CollectionConfig & SuiteConfig & TableConfig>) => setConfig(c => ({ ...c, ...patch }) as AnyConfig)
 
   const save = async () => {
     setBusy(true); setErr('')
@@ -73,7 +80,7 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
 
   if (testing) return <Runner exercise={draft} test onExit={() => setTesting(false)} />
 
-  const c = config as CollectionConfig & SuiteConfig
+  const c = config as CollectionConfig & SuiteConfig & TableConfig
   const invalid = c.min >= c.max
 
   return (
@@ -84,9 +91,9 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
       </div>
 
       <div className="types">
-        {(['entoure', 'combien', 'suite'] as ExerciseType[]).map(t => (
+        {(['entoure', 'combien', 'suite', 'table'] as ExerciseType[]).map(t => (
           <button key={t} className={'type-card' + (t === type ? ' on' : '')} onClick={() => changeType(t)} aria-pressed={t === type}>
-            <Thumb ex={{ ...draft, type: t, config: t === type ? config : defaultConfig(t) }} />
+            <Thumb ex={{ ...draft, type: t, config: family(t) === family(type) ? config : defaultConfig(t) }} />
             <b>{TYPE_LABEL[t]}</b>
           </button>
         ))}
@@ -94,7 +101,16 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
       <p className="help">{TYPE_HELP[type]}</p>
 
       <div className="form-grid">
-        {type !== 'suite' ? (
+        {type === 'table' ? (
+          <>
+            <Chips label="Cases à trouver" value={c.mode} onChange={v => upd({ mode: v })}
+              options={[{ v: 'sommes', l: 'Les sommes' }, { v: 'mixte', l: 'Sommes + en-têtes (défi)' }]} />
+            <Chips label="Taille" value={c.size} onChange={v => upd({ size: v })}
+              options={[{ v: 3, l: '3 × 3' }, { v: 4, l: '4 × 4' }]} />
+            <Stepper id="min" label="Plus petit nombre des en-têtes" value={c.min} min={0} max={49} onChange={n => upd({ min: n })} />
+            <Stepper id="max" label="Plus grand nombre des en-têtes" value={c.max} min={1} max={50} onChange={n => upd({ max: n })} hint="2 à 9 comme sur la fiche : sommes jusqu'à 18" />
+          </>
+        ) : type !== 'suite' ? (
           <>
             <Chips label="Nombres" value={c.onlyTens ? 1 : 0} onChange={v => upd({ onlyTens: v === 1 })}
               options={[{ v: 1, l: 'Dizaines (10, 20…)' }, { v: 0, l: 'Dizaines + unités' }]} />
@@ -113,7 +129,9 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
             <Stepper id="blanks" label="Cases vides" value={c.blanks} min={1} max={Math.max(1, c.length - 2)} onChange={n => upd({ blanks: n })} />
           </>
         )}
-        <Stepper id="q" label="Questions par partie" value={c.questions} min={3} max={20} onChange={n => upd({ questions: n })} hint="10 questions ≈ 5 minutes" />
+        {type === 'table'
+          ? <Stepper id="q" label="Tableaux par partie" value={c.questions} min={1} max={6} onChange={n => upd({ questions: n })} hint="Un tableau 4 × 4 ≈ 3 minutes" />
+          : <Stepper id="q" label="Questions par partie" value={c.questions} min={3} max={20} onChange={n => upd({ questions: n })} hint="10 questions ≈ 5 minutes" />}
         <div className="field wide">
           <label htmlFor="title">Nom affiché à l'enfant</label>
           <input id="title" maxLength={60} value={shownTitle} onChange={e => { setTitle(e.target.value); setTitleTouched(true) }} />
