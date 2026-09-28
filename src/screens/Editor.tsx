@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Runner } from '../engine/Runner'
-import { defaultConfig, TYPE_HELP, TYPE_LABEL, type AlphabetConfig, type AlphaSkill, type SonConfig, type CollectionConfig, type Exercise, type ExerciseType, type SuiteConfig, type TableConfig, SKILL_LABEL, TYPE_SUBJECT, SUBJECTS } from '../engine/types'
+import { defaultConfig, TYPE_HELP, TYPE_LABEL, type AlphabetConfig, type AlphaSkill, type SonConfig, type CalculConfig, type CollectionConfig, type Exercise, type ExerciseType, type SuiteConfig, type TableConfig, SKILL_LABEL, TYPE_SUBJECT, SUBJECTS } from '../engine/types'
 import { saveExercise } from '../lib/store'
 import { hasSon, isTrap } from '../engine/sons'
+import { calcTitle } from '../engine/calcul'
 import { Thumb } from './Home'
 
 function Stepper({ id, label, value, min, max, step = 1, onChange, hint }: {
@@ -35,10 +36,11 @@ function Chips<T extends string | number>({ label, value, options, onChange }: {
   )
 }
 
-type AnyConfig = CollectionConfig | SuiteConfig | TableConfig | AlphabetConfig | SonConfig
+type AnyConfig = CollectionConfig | SuiteConfig | TableConfig | AlphabetConfig | SonConfig | CalculConfig
 const family = (t: ExerciseType) => (t === 'entoure' || t === 'combien' ? 'collection' : t)
 
 function autoTitle(type: ExerciseType, c: AnyConfig) {
+  if (type === 'calcul') return calcTitle(c as CalculConfig)
   if (type === 'son') return (c as SonConfig).extra ? 'Le son on / om' : 'Mes mots on / om'
   if (type === 'alphabet') {
     const k = (c as AlphabetConfig).skills
@@ -76,7 +78,7 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
     setType(t)
     if (family(t) !== family(type)) setConfig(defaultConfig(t))
   }
-  const upd = (patch: Partial<CollectionConfig & SuiteConfig & TableConfig & AlphabetConfig & SonConfig>) => setConfig(c => ({ ...c, ...patch }) as AnyConfig)
+  const upd = (patch: Partial<CollectionConfig & SuiteConfig & TableConfig & AlphabetConfig & SonConfig & CalculConfig>) => setConfig(c => ({ ...c, ...patch }) as AnyConfig)
 
   const save = async () => {
     setBusy(true); setErr('')
@@ -87,8 +89,8 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
 
   if (testing) return <Runner exercise={draft} test onExit={() => setTesting(false)} />
 
-  const c = config as CollectionConfig & SuiteConfig & TableConfig & AlphabetConfig & SonConfig
-  const invalid = type === 'son' ? !c.focus.some(hasSon) && !c.extra : type !== 'alphabet' && c.min >= c.max
+  const c = config as CollectionConfig & SuiteConfig & TableConfig & AlphabetConfig & SonConfig & CalculConfig
+  const invalid = type === 'son' ? !c.focus.some(hasSon) && !c.extra : type === 'calcul' ? c.steps.length === 0 : type !== 'alphabet' && c.min >= c.max
 
   return (
     <div className="editor">
@@ -101,7 +103,7 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
         <div key={sub.id}>
           <div className="types-label">{sub.label}</div>
           <div className="types">
-            {(['entoure', 'combien', 'suite', 'table', 'alphabet', 'son'] as ExerciseType[]).filter(t => TYPE_SUBJECT[t] === sub.id).map(t => (
+            {(['entoure', 'combien', 'suite', 'table', 'calcul', 'alphabet', 'son'] as ExerciseType[]).filter(t => TYPE_SUBJECT[t] === sub.id).map(t => (
               <button key={t} className={'type-card' + (t === type ? ' on' : '')} onClick={() => changeType(t)} aria-pressed={t === type}>
                 <Thumb ex={{ ...draft, type: t, config: family(t) === family(type) ? config : defaultConfig(t) }} />
                 <b>{TYPE_LABEL[t]}</b>
@@ -113,7 +115,31 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
       <p className="help">{TYPE_HELP[type]}</p>
 
       <div className="form-grid">
-        {type === 'son' ? (
+        {type === 'calcul' ? (
+          <>
+            <Chips label="Opération" value={c.op} onChange={v => upd({ op: v })}
+              options={[{ v: '+', l: 'Additions' }, { v: '-', l: 'Soustractions' }, { v: 'mix', l: 'Les deux' }]} />
+            <Chips label="L'enfant cherche" value={c.find} onChange={v => upd({ find: v })}
+              options={[{ v: 'resultat', l: 'Le résultat (34 + 3 = ?)' }, { v: 'manquant', l: 'Le nombre manquant (34 + ? = 37)' }, { v: 'mix', l: 'Les deux' }]} />
+            <div className="field wide">
+              <span className="label">Nombres à {c.op === '-' ? 'enlever' : c.op === '+' ? 'ajouter' : 'ajouter ou enlever'}</span>
+              <div className="seg steps">
+                {Array.from({ length: 11 }, (_, n) => {
+                  const on = c.steps.includes(n)
+                  return (
+                    <button type="button" key={n} aria-pressed={on} disabled={on && c.steps.length === 1}
+                      onClick={() => upd({ steps: on ? c.steps.filter(x => x !== n) : [...c.steps, n].sort((a, b) => a - b) })}>
+                      {c.op === '-' ? '−' : c.op === '+' ? '+' : '±'}{n}
+                    </button>
+                  )
+                })}
+                <button type="button" className="all" onClick={() => upd({ steps: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] })}>Tout</button>
+              </div>
+            </div>
+            <Chips label="Le grand nombre" value={c.digits} onChange={v => upd({ digits: v })}
+              options={[{ v: 1, l: '1 chiffre (0-9)' }, { v: 2, l: '2 chiffres (10-99)' }, { v: 3, l: '3 chiffres (100-999)' }]} />
+          </>
+        ) : type === 'son' ? (
           <>
             <div className="field wide">
               <label htmlFor="focus">Mots à travailler (un par ligne ou séparés par des virgules)</label>

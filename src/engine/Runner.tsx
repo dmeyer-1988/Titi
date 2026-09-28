@@ -7,6 +7,8 @@ import { SuiteQ } from './SuiteQ'
 import { TableQ } from './TableQ'
 import { AlphaQ } from './AlphaQ'
 import { SonQ, SonRule } from './SonQ'
+import { CalcQ } from './CalcQ'
+import { calcAnswer, opSign } from './calcul'
 import { isTrap } from './sons'
 import { LETTER_NAME } from './alphabet'
 import { say, sounds } from './audio'
@@ -56,6 +58,11 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
       return { text: <>Entoure la collection de <strong>{q.target}</strong> balles de tennis.</>, speech: `Entoure la collection de ${words(q.target)} balles de tennis.` }
     if (exercise.type === 'combien')
       return { text: <>Combien de balles de tennis ?</>, speech: 'Combien de balles de tennis ?' }
+    if (q.kind === 'calc') {
+      const W = (k: 'a' | 'b' | 'c') => (q.blank === k ? 'combien' : words(q[k]))
+      const text = q.blank === 'c' ? <>Calcule.</> : <>Trouve le nombre qui manque.</>
+      return { text, speech: `${W('a')} ${q.op === '+' ? 'plus' : 'moins'} ${W('b')}, égale ${W('c')} ?` }
+    }
     if (q.kind === 'son') return { text: <>Complète le mot avec <strong>on</strong> ou <strong>om</strong>.</>, speech: `Complète le mot ${q.word} avec o, n, ou o, m.` }
     if (q.kind === 'alpha') {
       if (q.skill === 'suite') return { text: <>Quelle lettre manque ?</>, speech: "Quelle lettre manque dans l'alphabet ?" }
@@ -100,7 +107,9 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
       tries.current++
       misses.current++
       sounds.bad()
-      const hint = q.kind === 'son'
+      const hint = q.kind === 'calc'
+        ? (q.blank === 'a' ? "Fais le calcul à l'envers pour retrouver le premier nombre." : q.op === '+' ? 'Compte en avançant de 1 en 1 depuis le premier nombre.' : 'Compte en reculant de 1 en 1 depuis le premier nombre.')
+        : q.kind === 'son'
         ? (isTrap(q.word) ? "C'est un mot piège : il ne suit pas la règle !" : 'Regarde la lettre juste après : est-ce un m, un b ou un p ?')
         : q.kind === 'alpha'
         ? (q.skill === 'voyelles' ? "Ce n'est pas une voyelle. Cherche encore !"
@@ -125,6 +134,9 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
       const t = q.target, p = Math.floor(t / 10), u = t % 10
       sub = `${p} paquet${p > 1 ? 's' : ''} de 10${u ? ` et ${u} balle${u > 1 ? 's' : ''}` : ''} = ${t} (${words(t)})`
       say(`${words(t)} balles ! ${first ? praise : ''}`)
+    } else if (q.kind === 'calc') {
+      sub = `${q.a} ${opSign(q.op)} ${q.b} = ${q.c}`
+      say(`${words(calcAnswer(q))} ! ${praise}`)
     } else if (q.kind === 'son') {
       sub = isTrap(q.word) ? `« ${q.word} » est un mot piège : apprends-le par cœur.` : `« ${q.word} »`
       say(`${q.word}. ${praise}`)
@@ -213,6 +225,9 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
           )}
           {exercise.type === 'combien' && q.kind === 'collection' && (
             <CombienQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
+          )}
+          {q.kind === 'calc' && (
+            <CalcQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
           )}
           {q.kind === 'son' && (
             <SonQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />

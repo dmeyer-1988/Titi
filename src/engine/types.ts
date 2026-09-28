@@ -1,6 +1,6 @@
 // Types partagés entre le moteur, la base et les écrans.
 
-export type ExerciseType = 'entoure' | 'combien' | 'suite' | 'table' | 'alphabet' | 'son'
+export type ExerciseType = 'entoure' | 'combien' | 'suite' | 'table' | 'calcul' | 'alphabet' | 'son'
 
 /** Matières affichées sur l'accueil. La matière d'un exercice découle de son type. */
 export type Subject = 'maths' | 'francais'
@@ -15,6 +15,7 @@ export const TYPE_SUBJECT: Record<ExerciseType, Subject> = {
   combien: 'maths',
   suite: 'maths',
   table: 'maths',
+  calcul: 'maths',
   alphabet: 'francais',
   son: 'francais',
 }
@@ -81,7 +82,19 @@ export interface SonConfig {
   questions: number
 }
 
-export type ExerciseConfig = CollectionConfig | SuiteConfig | TableConfig | AlphabetConfig | SonConfig
+/** Additions / soustractions « +n » ou « −n » (n de 0 à 10). */
+export interface CalculConfig {
+  op: '+' | '-' | 'mix'
+  /** les n possibles : 0 à 10 */
+  steps: number[]
+  /** taille du grand nombre : 1 (0-9), 2 (10-99) ou 3 chiffres (100-999) */
+  digits: 1 | 2 | 3
+  /** ce que l'enfant cherche */
+  find: 'resultat' | 'manquant' | 'mix'
+  questions: number
+}
+
+export type ExerciseConfig = CollectionConfig | SuiteConfig | TableConfig | CalculConfig | AlphabetConfig | SonConfig
 
 export interface Exercise {
   id: string
@@ -116,6 +129,7 @@ export const TYPE_LABEL: Record<ExerciseType, string> = {
   combien: 'Combien ?',
   suite: 'Complète la suite',
   table: "Tableau d'addition",
+  calcul: 'Calcul',
   alphabet: "L'alphabet",
   son: 'Le son on / om',
 }
@@ -125,6 +139,7 @@ export const TYPE_HELP: Record<ExerciseType, string> = {
   combien: "L'enfant compte une collection (paquets de 10 et balles seules) et choisit le bon nombre.",
   suite: "L'enfant complète les cases vides d'une suite de nombres avec un clavier.",
   table: "L'enfant complète les cases vides d'un tableau d'addition. En mode mixte, il retrouve aussi des nombres des en-têtes à partir d'une somme.",
+  calcul: "Additions et soustractions du type 34 + 3 ou 47 − 5. Choisissez les nombres à ajouter ou enlever (+0 à +10), la taille du grand nombre, et si l'enfant cherche le résultat ou le nombre manquant (34 + ? = 37).",
   alphabet: "Lettre qui manque dans l'alphabet, lettre avant / après / entre, trouver les voyelles, ranger des mots selon l'ordre alphabétique (1re lettre). Les questions sont tirées au hasard parmi les parties choisies.",
   son: "La règle (m devant m, b, p) s'affiche au début, puis l'enfant choisit « on » ou « om » pour compléter chaque mot. Les mots à travailler reviennent à chaque partie ; les mots pièges (bonbon, nom, prénom…) sont repérés automatiquement.",
 }
@@ -132,6 +147,7 @@ export const TYPE_HELP: Record<ExerciseType, string> = {
 export function defaultConfig(type: ExerciseType): ExerciseConfig {
   if (type === 'suite') return { min: 10, max: 100, step: 10, length: 6, blanks: 1, direction: 'up', questions: 10 }
   if (type === 'table') return { min: 2, max: 9, size: 4, mode: 'sommes', questions: 2 }
+  if (type === 'calcul') return { op: '+', steps: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], digits: 2, find: 'resultat', questions: 10 }
   if (type === 'son') return { focus: ['ombre', 'tomber', 'prénom', 'nom', 'ballon', 'pompon', 'bonbon'], extra: true, showRule: true, questions: 12 }
   if (type === 'alphabet') return { skills: ['suite', 'position', 'voyelles', 'ranger'], words: 3, capitals: false, questions: 12 }
   return { min: 10, max: 90, onlyTens: true, questions: 10 }
@@ -142,6 +158,12 @@ export const ALPHABET_SEED: Omit<Exercise, 'id'>[] = [
   { type: 'alphabet', title: "L'ordre des lettres", config: { skills: ['suite', 'position'], words: 3, capitals: false, questions: 10 }, active: true, position: 1 },
   { type: 'alphabet', title: 'Les voyelles', config: { skills: ['voyelles'], words: 3, capitals: false, questions: 6 }, active: true, position: 2 },
   { type: 'alphabet', title: 'Ranger les mots', config: { skills: ['ranger'], words: 3, capitals: false, questions: 8 }, active: true, position: 3 },
+]
+
+export const CALCUL_SEED: Omit<Exercise, 'id'>[] = [
+  { type: 'calcul', title: 'Additions +0 à +10', config: { op: '+', steps: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], digits: 2, find: 'resultat', questions: 10 }, active: true, position: 0 },
+  { type: 'calcul', title: 'Soustractions −0 à −10', config: { op: '-', steps: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], digits: 2, find: 'resultat', questions: 10 }, active: true, position: 1 },
+  { type: 'calcul', title: 'Le nombre manquant', config: { op: 'mix', steps: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], digits: 2, find: 'manquant', questions: 10 }, active: true, position: 2 },
 ]
 
 export const SON_SEED: Omit<Exercise, 'id'>[] = [
@@ -157,4 +179,5 @@ export const SEED_EXERCISES: Omit<Exercise, 'id'>[] = [
   { type: 'table', title: 'Les nombres manquants — défi', config: { min: 2, max: 9, size: 4, mode: 'mixte', questions: 2 }, active: true, position: 4 },
   ...ALPHABET_SEED.map((e, i) => ({ ...e, position: 5 + i })),
   ...SON_SEED.map((e, i) => ({ ...e, position: 9 + i })),
+  ...CALCUL_SEED.map((e, i) => ({ ...e, position: 11 + i })),
 ]

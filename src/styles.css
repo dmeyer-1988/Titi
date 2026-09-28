@@ -378,8 +378,8 @@ input:focus { border-color: var(--court); }
 .table-thumb span { height: 24px; display: grid; place-items: center; font-size: 13px; background: #D3DDA0; border-right: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
 .table-thumb span.h { background: #BFCD7F; }
 .table-thumb span.empty { background: #fff; }
-.ex-list .table-thumb { grid-template-columns: repeat(3, 20px); }
-.ex-list .table-thumb span { height: 18px; font-size: 10px; }
+.ex-list .table-thumb, .type-card .table-thumb { grid-template-columns: repeat(3, 20px); }
+.ex-list .table-thumb span, .type-card .table-thumb span { height: 18px; font-size: 10px; }
 
 /* ---------- Alphabet ---------- */
 .letter-row { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 14px 0 26px; }
@@ -491,6 +491,35 @@ textarea:focus { border-color: var(--court); outline: none; }
 @media (max-width: 520px) {
   .son-choice { min-width: 130px; height: 100px; }
 }
+
+/* ---------- Calcul ---------- */
+.calc-q { display: flex; flex-direction: column; align-items: center; gap: 22px; margin-top: 6px; }
+.calc-eq { display: flex; align-items: center; gap: clamp(8px, 2vw, 16px); flex-wrap: wrap; justify-content: center; }
+.cbox {
+  font-family: var(--display); font-weight: 800; font-size: clamp(44px, 8vw, 72px); line-height: 1; font-variant-numeric: tabular-nums;
+  min-width: clamp(90px, 15vw, 140px); height: clamp(84px, 13vw, 120px); padding: 8px 14px 0; display: grid; place-items: center;
+  background: #fff; border: 3px solid var(--rule); border-radius: 20px; color: var(--ink);
+}
+.cbox.blank { border: 3px dashed var(--court); background: var(--court-soft); color: var(--court); }
+.cbox.ok { border-style: solid; border-color: var(--ok); background: var(--ok-soft); color: var(--ok); }
+.cbox.shake { animation: shake .4s; border-color: var(--no); color: var(--no); }
+.cop { font-family: var(--display); font-weight: 800; font-size: clamp(44px, 8vw, 72px); color: var(--red); }
+.calc-help { background: #FDF3D0; border-radius: 16px; padding: 10px 16px; max-width: 100%; overflow-x: auto; }
+.calc-help p { margin: 0; font-size: 20px; }
+.hops { display: flex; align-items: flex-end; gap: 4px; }
+.hop { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 44px; }
+.hop i { font-style: normal; font-size: 13px; color: var(--red); font-weight: 700; }
+.hop b { font-family: var(--display); font-weight: 800; font-size: 22px; background: #fff; border-radius: 10px; padding: 4px 8px 0; min-width: 44px; text-align: center; font-variant-numeric: tabular-nums; }
+.hop.start b { background: var(--court); color: #fff; }
+.calc-q .keypad { width: 100%; }
+.calc-thumb { gap: 5px; }
+.calc-thumb span { font-family: var(--display); font-weight: 800; font-size: 22px; background: #fff; border: 2px solid var(--rule); border-radius: 10px; min-width: 42px; height: 44px; display: grid; place-items: center; padding: 3px 6px 0; }
+.calc-thumb span.q { border: 2px dashed var(--court); background: var(--court-soft); color: var(--court); }
+.calc-thumb i { font-style: normal; font-family: var(--display); font-weight: 800; font-size: 22px; color: var(--red); }
+.ex-list .calc-thumb span, .type-card .calc-thumb span { font-size: 15px; min-width: 28px; height: 30px; }
+.ex-list .calc-thumb i, .type-card .calc-thumb i { font-size: 15px; }
+.seg.steps button { min-width: 52px; font-variant-numeric: tabular-nums; }
+.seg.steps .all { font-weight: 700; color: var(--court); }
 
 @keyframes pop { from { scale: .2; opacity: 0; } to { scale: 1; opacity: 1; } }
 @keyframes shake { 0%, 100% { translate: 0; } 20% { translate: -8px; } 40% { translate: 8px; } 60% { translate: -5px; } 80% { translate: 5px; } }

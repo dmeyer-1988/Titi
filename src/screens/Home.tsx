@@ -3,6 +3,17 @@ import type { Child, Exercise, Subject } from '../engine/types'
 import { SUBJECTS, TYPE_LABEL, TYPE_SUBJECT } from '../engine/types'
 
 export function Thumb({ ex }: { ex: Exercise }) {
+  if (ex.type === 'calcul') {
+    const c = ex.config as { op?: string; find?: string }
+    const sign = c.op === '-' ? '−' : '+'
+    const miss = c.find === 'manquant'
+    return (
+      <div className="thumb calc-thumb" aria-hidden="true">
+        <span>34</span><i>{sign}</i><span className={miss ? 'q' : ''}>{miss ? '?' : '3'}</span><i>=</i>
+        <span className={miss ? '' : 'q'}>{miss ? (sign === '+' ? '37' : '31') : '?'}</span>
+      </div>
+    )
+  }
   if (ex.type === 'son') {
     return (
       <div className="thumb son-thumb" aria-hidden="true">

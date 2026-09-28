@@ -112,6 +112,12 @@ function ExerciseList({ exercises, onChanged, onEdit }: Props & { onEdit: (e: Ex
 
 function describe(ex: Exercise) {
   const c = ex.config as unknown as Record<string, number | boolean | string>
+  if (ex.type === 'calcul') {
+    const k = ex.config as unknown as { op: string; steps: number[]; digits: number; find: string }
+    const ops = k.op === '+' ? 'additions' : k.op === '-' ? 'soustractions' : 'additions et soustractions'
+    const f = k.find === 'resultat' ? 'trouver le résultat' : k.find === 'manquant' ? 'trouver le nombre manquant' : 'résultat ou nombre manquant'
+    return `${ops}, ${[...k.steps].sort((a, b) => a - b).join(' ')}, ${k.digits} chiffre${k.digits > 1 ? 's' : ''}, ${f}`
+  }
   if (ex.type === 'son') {
     const a = ex.config as unknown as { focus: string[]; extra: boolean }
     return `${a.focus.length} mot${a.focus.length > 1 ? 's' : ''} à travailler${a.extra ? ' + mots au hasard' : ''} : ${a.focus.slice(0, 5).join(', ')}${a.focus.length > 5 ? '…' : ''}`
