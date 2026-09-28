@@ -82,6 +82,8 @@ interface Props {
   albumOwned: number | null
   albumTotal: number
   onAlbum: () => void
+  team: { name: string; avatar: string } | null
+  onTeam: () => void
   offline: boolean
   subject: Subject | null
   onSubject: (s: Subject | null) => void
@@ -90,7 +92,7 @@ interface Props {
   onParent: () => void
 }
 
-export function Home({ children, child, exercises, stars, wallet, albumOwned, albumTotal, onAlbum, offline, subject, onSubject, onPickChild, onPlay, onParent }: Props) {
+export function Home({ children, child, exercises, stars, wallet, albumOwned, albumTotal, onAlbum, team, onTeam, offline, subject, onSubject, onPickChild, onPlay, onParent }: Props) {
   const active = exercises.filter(e => e.active)
   const bySubject = (s: Subject) => active.filter(e => TYPE_SUBJECT[e.type] === s)
   const starsFor = (list: Exercise[]) => list.reduce((a, e) => a + (stars[e.id] || 0), 0)
@@ -162,6 +164,13 @@ export function Home({ children, child, exercises, stars, wallet, albumOwned, al
                 <span className="mini-stars"><svg className="star" aria-hidden="true"><use href="#star" /></svg>{wallet}</span>
               </span>
             </button>
+            {team && (
+              <button className="subject team-card" onClick={onTeam}>
+                <span className="team-art" aria-hidden="true"><span>{team.avatar}</span><span>🤝</span></span>
+                <span className="subject-name">Mon équipe</span>
+                <span className="subject-meta"><span>{team.name}</span></span>
+              </button>
+            )}
           </div>
         </>
       ) : (

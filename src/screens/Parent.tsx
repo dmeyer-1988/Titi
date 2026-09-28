@@ -4,6 +4,7 @@ import { TYPE_LABEL } from '../engine/types'
 import { addChild, deleteExercise, moveExercise, pendingCount, renameChild, setExerciseActive, setPin } from '../lib/store'
 import { supabase } from '../lib/supabase'
 import { setPackPrice } from '../lib/albumStore'
+import { TeamSettings } from './TeamSettings'
 import { Editor } from './Editor'
 import { Thumb } from './Home'
 import { Stats } from './Stats'
@@ -134,7 +135,7 @@ function describe(ex: Exercise) {
   return `${c.onlyTens ? 'dizaines' : 'dizaines + unités'}, ${c.min}–${c.max}`
 }
 
-function Profile({ uid, email, children, pin, packPrice, onChanged }: Props) {
+function Profile({ uid, email, children, child, pin, packPrice, onChanged }: Props) {
   const [price, setPrice] = useState(packPrice)
   const [names, setNames] = useState<Record<string, string>>(() => Object.fromEntries(children.map(c => [c.id, c.name])))
   const [newName, setNewName] = useState('')
@@ -195,6 +196,11 @@ function Profile({ uid, email, children, pin, packPrice, onChanged }: Props) {
           <button className="btn ghost small" disabled={newPin.length !== 4} onClick={() => run('pin', async () => { await setPin(uid, newPin); setNewPin('') }, 'Code parent modifié.')}>Changer le code</button>
         </div>
         <Note where="pin" />
+      </section>
+
+      <section>
+        <h3>Équipe de copains</h3>
+        <TeamSettings uid={uid} child={child} onChanged={() => void onChanged()} />
       </section>
 
       <section>

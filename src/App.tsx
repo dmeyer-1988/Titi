@@ -13,8 +13,10 @@ import { Setup } from './screens/Setup'
 import { Album } from './album/Album'
 import { STICKERS } from './album/catalog'
 import { fetchAlbum } from './lib/albumStore'
+import { getMembership, type Membership } from './lib/teamStore'
+import { Team } from './screens/Team'
 
-type View = { name: 'home' } | { name: 'play'; ex: Exercise } | { name: 'pin' } | { name: 'parent' } | { name: 'album' }
+type View = { name: 'home' } | { name: 'play'; ex: Exercise } | { name: 'pin' } | { name: 'parent' } | { name: 'album' } | { name: 'team' }
 
 const CHILD_KEY = 'balles-child'
 
@@ -28,6 +30,7 @@ export default function App() {
   // Porte-monnaie : étoiles gagnées (toutes) − étoiles dépensées en pochettes.
   const [earned, setEarned] = useState(0)
   const [album, setAlbum] = useState<{ spent: number; owned: number } | null>(null)
+  const [team, setTeam] = useState<Membership | null>(null)
   const [offline, setOffline] = useState(!navigator.onLine)
   const [subject, setSubject] = useState<Subject | null>(null)
 
@@ -86,6 +89,7 @@ export default function App() {
       const al = await fetchAlbum(child.id)
       setAlbum({ spent: al.spent, owned: STICKERS.filter(x => al.counts.get(x.id)).length })
     } catch { /* hors ligne */ }
+    try { setTeam(await getMembership(child.id)) } catch { /* hors ligne */ }
   }, [child?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { void loadStars() }, [loadStars])
@@ -133,6 +137,8 @@ export default function App() {
     )
   } else if (view.name === 'album') {
     screen = <Album childId={child.id} earned={earned} price={family.packPrice ?? 10} onExit={() => { setView({ name: 'home' }); void loadStars() }} />
+  } else if (view.name === 'team' && team) {
+    screen = <Team childId={child.id} membership={team} onExit={() => { setView({ name: 'home' }); void loadStars() }} />
   } else if (view.name === 'pin') {
     screen = (
       <PinGate
@@ -153,8 +159,8 @@ export default function App() {
         pin={family.pin}
         packPrice={family.packPrice ?? 10}
         onPickChild={pickChild}
-        onChanged={refresh}
-        onExit={() => setView({ name: 'home' })}
+        onChanged={async () => { await refresh(); void loadStars() }}
+        onExit={() => { setView({ name: 'home' }); void loadStars() }}
       />
     )
   } else {
@@ -168,6 +174,8 @@ export default function App() {
         albumOwned={album?.owned ?? null}
         albumTotal={STICKERS.length}
         onAlbum={() => setView({ name: 'album' })}
+        team={team ? { name: team.team.name, avatar: team.avatar } : null}
+        onTeam={() => setView({ name: 'team' })}
         offline={offline}
         subject={subject}
         onSubject={setSubject}
