@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { SECTIONS, STICKER, STICKERS, type SectionId, type StickerDef } from './catalog'
 import { Slot, Sticker } from './Sticker'
 import { StickerArt } from './Art'
+import { ScratchCard } from './Scratch'
 import { doublesOf, fetchAlbum, openPack, tradeDoubles, type AlbumState } from '../lib/albumStore'
 import { say, sounds } from '../engine/audio'
 
@@ -144,24 +145,24 @@ function AlbumHead({ onExit, wallet }: { onExit: () => void; wallet: number | nu
   )
 }
 
-/** Ouverture de pochette : on déchire, puis chaque vignette se retourne. */
+/** Ouverture de pochette : on déchire, puis on gratte chaque vignette comme un ticket. */
 export function PackOpening({ ids, before, trade, onDone }: { ids: number[]; before: Map<number, number>; trade: boolean; onDone: () => void }) {
   const [stage, setStage] = useState<'closed' | 'open'>(trade ? 'open' : 'closed')
-  const [shown, setShown] = useState(trade ? 1 : 0)
+  const [revealed, setRevealed] = useState<boolean[]>(() => ids.map(() => false))
+  const [all, setAll] = useState(false)
   const seen = new Map(before)
   const flags = ids.map(id => { const isNew = !seen.get(id); seen.set(id, (seen.get(id) || 0) + 1); return isNew })
+  const done = revealed.every(Boolean)
 
-  useEffect(() => {
-    if (stage !== 'open' || shown >= ids.length) return
-    const t = setTimeout(() => {
-      setShown(n => n + 1)
-      const s = STICKER.get(ids[shown])
-      if (s?.shiny) sounds.fanfare(); else sounds.tick(shown + 2)
-    }, shown === 0 ? 350 : 700)
-    return () => clearTimeout(t)
-  }, [stage, shown, ids])
+  useEffect(() => { if (trade) { sounds.good(); say('Échange réussi ! Gratte pour découvrir ta vignette.') } }, [trade])
+  useEffect(() => { if (stage === 'open' && !trade) say('Gratte les vignettes avec ton doigt !') }, [stage, trade])
 
-  useEffect(() => { if (trade) { sounds.good(); say('Échange réussi !') } }, [trade])
+  const reveal = (i: number) => {
+    setRevealed(r => { if (r[i]) return r; const x = [...r]; x[i] = true; return x })
+    const s = STICKER.get(ids[i])
+    if (s?.shiny) sounds.fanfare(); else if (flags[i]) sounds.good(); else sounds.tick(3)
+    if (s) setTimeout(() => say(flags[i] ? `${s.name} ! Nouvelle !` : `${s.name}, double.`), 250)
+  }
 
   return (
     <div className="overlay" role="dialog" aria-label="Pochette de vignettes">
@@ -171,28 +172,32 @@ export function PackOpening({ ids, before, trade, onDone }: { ids: number[]; bef
           <span className="pack-body">
             <Star />
             <b>Les balles</b>
-            <small>5 vignettes</small>
+            <small>5 vignettes à gratter</small>
           </span>
           <span className="pack-hint">Touche pour ouvrir</span>
         </button>
       ) : (
         <div className="reveal">
-          <h2>{trade ? 'Échange réussi !' : 'Ta pochette'}</h2>
+          <h2>{trade ? 'Échange réussi !' : done ? 'Ta pochette' : 'Gratte tes vignettes !'}</h2>
           <div className="reveal-cards">
             {ids.map((id, i) => {
               const s = STICKER.get(id)!
               return (
-                <div key={i} className={'flip' + (i < shown ? ' on' : '')}>
-                  <div className="flip-back"><Star /></div>
-                  <div className="flip-front">
+                <div key={i} className={'scratch-slot' + (revealed[i] ? ' on' : '') + (revealed[i] && s.shiny ? ' shiny-burst' : '')}>
+                  <ScratchCard revealed={all} onReveal={() => reveal(i)}>
                     <Sticker s={s} />
-                    <span className={'tag-new ' + (flags[i] ? 'new' : 'dup')}>{flags[i] ? 'Nouvelle !' : 'Double'}</span>
-                  </div>
+                  </ScratchCard>
+                  {revealed[i] && <span className={'tag-new ' + (flags[i] ? 'new' : 'dup')}>{flags[i] ? 'Nouvelle !' : 'Double'}</span>}
                 </div>
               )
             })}
           </div>
-          <button className="btn" onClick={onDone} disabled={shown < ids.length}>Coller dans mon album</button>
+          <div className="row reveal-actions">
+            {!done && ids.length > 1 && (
+              <button className="btn ghost" onClick={() => { setAll(true); ids.forEach((_, i) => { if (!revealed[i]) setTimeout(() => reveal(i), i * 250) }) }}>Tout gratter</button>
+            )}
+            <button className="btn" onClick={onDone} disabled={!done}>Coller dans mon album</button>
+          </div>
         </div>
       )}
     </div>

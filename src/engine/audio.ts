@@ -26,7 +26,27 @@ export function tone(freqs: number[], dur = 0.12) {
   } catch { /* son indisponible */ }
 }
 
+/** Petit « frrt » de grattage : un souffle de bruit filtré très court. */
+function scratchNoise() {
+  if (muted) return
+  try {
+    const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    ctx = ctx || new AC()
+    if (ctx.state === 'suspended') void ctx.resume()
+    const len = Math.floor(ctx.sampleRate * 0.05)
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate)
+    const d = buf.getChannelData(0)
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len)
+    const src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain()
+    src.buffer = buf; f.type = 'bandpass'; f.frequency.value = 2400 + Math.random() * 1600; f.Q.value = 0.8
+    g.gain.value = 0.12
+    src.connect(f).connect(g).connect(ctx.destination)
+    src.start()
+  } catch { /* son indisponible */ }
+}
+
 export const sounds = {
+  scratch: scratchNoise,
   good: () => tone([660, 880, 1100], 0.1),
   bad: () => tone([300, 220], 0.12),
   tick: (i: number) => tone([520 + i * 40], 0.08),
