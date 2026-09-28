@@ -78,6 +78,10 @@ interface Props {
   child: Child
   exercises: Exercise[]
   stars: Record<string, number>
+  wallet: number
+  albumOwned: number | null
+  albumTotal: number
+  onAlbum: () => void
   offline: boolean
   subject: Subject | null
   onSubject: (s: Subject | null) => void
@@ -86,9 +90,8 @@ interface Props {
   onParent: () => void
 }
 
-export function Home({ children, child, exercises, stars, offline, subject, onSubject, onPickChild, onPlay, onParent }: Props) {
+export function Home({ children, child, exercises, stars, wallet, albumOwned, albumTotal, onAlbum, offline, subject, onSubject, onPickChild, onPlay, onParent }: Props) {
   const active = exercises.filter(e => e.active)
-  const total = Object.values(stars).reduce((a, b) => a + b, 0)
   const bySubject = (s: Subject) => active.filter(e => TYPE_SUBJECT[e.type] === s)
   const starsFor = (list: Exercise[]) => list.reduce((a, e) => a + (stars[e.id] || 0), 0)
   const current = subject ? SUBJECTS.find(s => s.id === subject)! : null
@@ -113,9 +116,9 @@ export function Home({ children, child, exercises, stars, offline, subject, onSu
             </>
           )}
         </div>
-        <div className="total-stars" aria-label={`${total} étoiles`}>
+        <div className="total-stars" aria-label={`${wallet} étoiles à dépenser`}>
           <svg className="star" aria-hidden="true"><use href="#star" /></svg>
-          <span>{total}</span>
+          <span>{wallet}</span>
         </div>
       </header>
 
@@ -149,6 +152,16 @@ export function Home({ children, child, exercises, stars, offline, subject, onSu
                 </button>
               )
             })}
+            <button className="subject album-card" onClick={onAlbum}>
+              <span className="album-art" aria-hidden="true">
+                <span className="mini-sticker a">🦁</span><span className="mini-sticker b">🦖</span><span className="mini-sticker c">⚽</span>
+              </span>
+              <span className="subject-name">Mon album</span>
+              <span className="subject-meta">
+                <span>{albumOwned === null ? 'Vignettes à collectionner' : `${albumOwned} / ${albumTotal} vignettes`}</span>
+                <span className="mini-stars"><svg className="star" aria-hidden="true"><use href="#star" /></svg>{wallet}</span>
+              </span>
+            </button>
           </div>
         </>
       ) : (

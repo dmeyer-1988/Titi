@@ -3,6 +3,7 @@ import type { Child, Exercise } from '../engine/types'
 import { TYPE_LABEL } from '../engine/types'
 import { addChild, deleteExercise, moveExercise, pendingCount, renameChild, setExerciseActive, setPin } from '../lib/store'
 import { supabase } from '../lib/supabase'
+import { setPackPrice } from '../lib/albumStore'
 import { Editor } from './Editor'
 import { Thumb } from './Home'
 import { Stats } from './Stats'
@@ -14,6 +15,7 @@ interface Props {
   child: Child
   exercises: Exercise[]
   pin: string
+  packPrice: number
   onPickChild: (id: string) => void
   onChanged: () => Promise<void>
   onExit: () => void
@@ -132,7 +134,8 @@ function describe(ex: Exercise) {
   return `${c.onlyTens ? 'dizaines' : 'dizaines + unités'}, ${c.min}–${c.max}`
 }
 
-function Profile({ uid, email, children, pin, onChanged }: Props) {
+function Profile({ uid, email, children, pin, packPrice, onChanged }: Props) {
+  const [price, setPrice] = useState(packPrice)
   const [names, setNames] = useState<Record<string, string>>(() => Object.fromEntries(children.map(c => [c.id, c.name])))
   const [newName, setNewName] = useState('')
   const [newPin, setNewPin] = useState('')
@@ -192,6 +195,21 @@ function Profile({ uid, email, children, pin, onChanged }: Props) {
           <button className="btn ghost small" disabled={newPin.length !== 4} onClick={() => run('pin', async () => { await setPin(uid, newPin); setNewPin('') }, 'Code parent modifié.')}>Changer le code</button>
         </div>
         <Note where="pin" />
+      </section>
+
+      <section>
+        <h3>Album de vignettes</h3>
+        <p className="muted">Prix d'une pochette de 5 vignettes. Une question réussie du premier coup rapporte 1 étoile (environ 5 à 10 par partie). L'album compte 52 vignettes.</p>
+        <div className="row">
+          <div className="stepper">
+            <button type="button" onClick={() => setPrice(p => Math.max(1, p - 1))} aria-label="Moins cher">−</button>
+            <input id="pack-price" inputMode="numeric" value={price} onChange={e => { const n = Number(e.target.value.replace(/\D/g, '')); if (!Number.isNaN(n)) setPrice(Math.min(100, n)) }} />
+            <button type="button" onClick={() => setPrice(p => Math.min(100, p + 1))} aria-label="Plus cher">+</button>
+          </div>
+          <span className="muted">étoiles</span>
+          <button className="btn ghost small" disabled={price === packPrice || price < 1} onClick={() => run('price', () => setPackPrice(uid, price), 'Prix enregistré.')}>Enregistrer</button>
+        </div>
+        <Note where="price" />
       </section>
 
       <section>

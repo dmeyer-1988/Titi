@@ -10,8 +10,11 @@ import { Login } from './screens/Login'
 import { Parent } from './screens/Parent'
 import { PinGate } from './screens/PinGate'
 import { Setup } from './screens/Setup'
+import { Album } from './album/Album'
+import { STICKERS } from './album/catalog'
+import { fetchAlbum } from './lib/albumStore'
 
-type View = { name: 'home' } | { name: 'play'; ex: Exercise } | { name: 'pin' } | { name: 'parent' }
+type View = { name: 'home' } | { name: 'play'; ex: Exercise } | { name: 'pin' } | { name: 'parent' } | { name: 'album' }
 
 const CHILD_KEY = 'balles-child'
 
@@ -22,6 +25,9 @@ export default function App() {
   const [view, setView] = useState<View>({ name: 'home' })
   const [childId, setChildId] = useState<string | null>(() => { try { return localStorage.getItem(CHILD_KEY) } catch { return null } })
   const [stars, setStars] = useState<Record<string, number>>({})
+  // Porte-monnaie : étoiles gagnées (toutes) − étoiles dépensées en pochettes.
+  const [earned, setEarned] = useState(0)
+  const [album, setAlbum] = useState<{ spent: number; owned: number } | null>(null)
   const [offline, setOffline] = useState(!navigator.onLine)
   const [subject, setSubject] = useState<Subject | null>(null)
 
@@ -71,9 +77,15 @@ export default function App() {
     try {
       const all = await fetchAttempts({ childId: child.id })
       const s: Record<string, number> = {}
-      for (const a of all) if (a.first_try && a.correct && a.exercise_id) s[a.exercise_id] = (s[a.exercise_id] || 0) + 1
+      let e = 0
+      for (const a of all) if (a.first_try && a.correct) { e++; if (a.exercise_id) s[a.exercise_id] = (s[a.exercise_id] || 0) + 1 }
       setStars(s)
+      setEarned(e)
     } catch { /* hors ligne : on garde les étoiles affichées */ }
+    try {
+      const al = await fetchAlbum(child.id)
+      setAlbum({ spent: al.spent, owned: STICKERS.filter(x => al.counts.get(x.id)).length })
+    } catch { /* hors ligne */ }
   }, [child?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { void loadStars() }, [loadStars])
@@ -110,12 +122,17 @@ export default function App() {
           childName={child.name}
           onRecord={a => {
             recordAttempt(child.id, a)
-            if (a.first_try && a.correct && a.exercise_id) setStars(s => ({ ...s, [a.exercise_id!]: (s[a.exercise_id!] || 0) + 1 }))
+            if (a.first_try && a.correct) {
+              setEarned(e => e + 1)
+              if (a.exercise_id) setStars(s => ({ ...s, [a.exercise_id!]: (s[a.exercise_id!] || 0) + 1 }))
+            }
           }}
           onExit={() => { setView({ name: 'home' }); void loadStars() }}
         />
       </div>
     )
+  } else if (view.name === 'album') {
+    screen = <Album childId={child.id} earned={earned} price={family.packPrice ?? 10} onExit={() => { setView({ name: 'home' }); void loadStars() }} />
   } else if (view.name === 'pin') {
     screen = (
       <PinGate
@@ -134,6 +151,7 @@ export default function App() {
         child={child}
         exercises={family.exercises}
         pin={family.pin}
+        packPrice={family.packPrice ?? 10}
         onPickChild={pickChild}
         onChanged={refresh}
         onExit={() => setView({ name: 'home' })}
@@ -146,6 +164,10 @@ export default function App() {
         child={child}
         exercises={family.exercises}
         stars={stars}
+        wallet={Math.max(0, earned - (album?.spent ?? 0))}
+        albumOwned={album?.owned ?? null}
+        albumTotal={STICKERS.length}
+        onAlbum={() => setView({ name: 'album' })}
         offline={offline}
         subject={subject}
         onSubject={setSubject}

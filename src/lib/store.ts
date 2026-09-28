@@ -8,6 +8,7 @@ export interface Family {
   children: Child[]
   exercises: Exercise[]
   pin: string
+  packPrice?: number
 }
 
 const cacheKey = (uid: string) => `balles-cache-${uid}`
@@ -26,7 +27,7 @@ export async function fetchFamily(uid: string): Promise<Family> {
   const [c, e, p] = await Promise.all([
     supabase.from('children').select('id,name').order('created_at'),
     supabase.from('exercises').select('id,type,title,config,active,position,updated_at').order('position').order('created_at'),
-    supabase.from('profiles').select('parent_pin').eq('user_id', uid).maybeSingle(),
+    supabase.from('profiles').select('parent_pin,pack_price').eq('user_id', uid).maybeSingle(),
   ])
   if (c.error) throw c.error
   if (e.error) throw e.error
@@ -35,6 +36,7 @@ export async function fetchFamily(uid: string): Promise<Family> {
     children: c.data as Child[],
     exercises: e.data as Exercise[],
     pin: p.data?.parent_pin ?? '1234',
+    packPrice: p.data?.pack_price ?? 10,
   }
   writeCache(uid, fam)
   return fam
