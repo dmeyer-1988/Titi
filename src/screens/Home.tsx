@@ -103,7 +103,7 @@ export function Home({ children, child, exercises, stars, offline, subject, onSu
           )}
         </div>
         <div className="total-stars" aria-label={`${total} étoiles`}>
-          <svg className="ball" aria-hidden="true"><use href="#ball" /></svg>
+          <svg className="star" aria-hidden="true"><use href="#star" /></svg>
           <span>{total}</span>
         </div>
       </header>
@@ -131,7 +131,7 @@ export function Home({ children, child, exercises, stars, offline, subject, onSu
                     {empty ? <span>Bientôt</span> : (
                       <>
                         <span>{list.length} jeu{list.length > 1 ? 'x' : ''}</span>
-                        <span className="mini-stars"><svg className="ball" aria-hidden="true"><use href="#ball" /></svg>{starsFor(list)}</span>
+                        <span className="mini-stars"><svg className="star" aria-hidden="true"><use href="#star" /></svg>{starsFor(list)}</span>
                       </>
                     )}
                   </span>
@@ -153,7 +153,7 @@ export function Home({ children, child, exercises, stars, offline, subject, onSu
                   <span className="game-title">{ex.title}</span>
                   <span className="game-meta">
                     <span className="type">{TYPE_LABEL[ex.type]}</span>
-                    <span className="mini-stars"><svg className="ball" aria-hidden="true"><use href="#ball" /></svg>{stars[ex.id] || 0}</span>
+                    <span className="mini-stars"><svg className="star" aria-hidden="true"><use href="#star" /></svg>{stars[ex.id] || 0}</span>
                   </span>
                 </button>
               ))}

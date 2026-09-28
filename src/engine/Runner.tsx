@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { Ball } from './Balls'
+import { Star } from './Balls'
 import { CombienQ } from './CombienQ'
 import { EntoureQ } from './EntoureQ'
 import { makeRound, type Question } from './generate'
@@ -176,7 +176,8 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
 
       <div className="progress" aria-label={`Question ${Math.min(idx + 1, round.length)} sur ${round.length}`}>
         {round.map((_, i) => (
-          <span key={i} className={'dot' + (i < results.length && results[i] !== undefined ? (results[i] ? ' star' : ' done') : '') + (i === idx && phase !== 'end' ? ' now' : '')} />
+          results[i] ? <Star key={i} className="dot-star" />
+            : <span key={i} className={'dot' + (results[i] === false ? ' done' : '') + (i === idx && phase !== 'end' ? ' now' : '')} />
         ))}
         <span className="count">{Math.min(idx + 1, round.length)} / {round.length}</span>
       </div>
@@ -186,7 +187,7 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
       ) : phase === 'end' ? (
         <div className="end">
           <div className="stars">
-            {Array.from({ length: stars }, (_, i) => <span key={i} style={{ animationDelay: `${i * 0.12}s` }}><Ball /></span>)}
+            {Array.from({ length: stars }, (_, i) => <span key={i} style={{ animationDelay: `${i * 0.12}s` }}><Star /></span>)}
           </div>
           <div className="big">{stars} / {round.length}</div>
           <p>{endMessage(stars, round.length, name)}</p>
