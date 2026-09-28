@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Runner } from '../engine/Runner'
-import { defaultConfig, TYPE_HELP, TYPE_LABEL, type AlphabetConfig, type AlphaSkill, type CollectionConfig, type Exercise, type ExerciseType, type SuiteConfig, type TableConfig, SKILL_LABEL, TYPE_SUBJECT, SUBJECTS } from '../engine/types'
+import { defaultConfig, TYPE_HELP, TYPE_LABEL, type AlphabetConfig, type AlphaSkill, type SonConfig, type CollectionConfig, type Exercise, type ExerciseType, type SuiteConfig, type TableConfig, SKILL_LABEL, TYPE_SUBJECT, SUBJECTS } from '../engine/types'
 import { saveExercise } from '../lib/store'
+import { hasSon, isTrap } from '../engine/sons'
 import { Thumb } from './Home'
 
 function Stepper({ id, label, value, min, max, step = 1, onChange, hint }: {
@@ -34,10 +35,11 @@ function Chips<T extends string | number>({ label, value, options, onChange }: {
   )
 }
 
-type AnyConfig = CollectionConfig | SuiteConfig | TableConfig | AlphabetConfig
+type AnyConfig = CollectionConfig | SuiteConfig | TableConfig | AlphabetConfig | SonConfig
 const family = (t: ExerciseType) => (t === 'entoure' || t === 'combien' ? 'collection' : t)
 
 function autoTitle(type: ExerciseType, c: AnyConfig) {
+  if (type === 'son') return (c as SonConfig).extra ? 'Le son on / om' : 'Mes mots on / om'
   if (type === 'alphabet') {
     const k = (c as AlphabetConfig).skills
     return k.length === 1 ? SKILL_LABEL[k[0]] : k.length >= 4 ? 'Entraînement au test' : "L'alphabet"
@@ -65,6 +67,7 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
   const [testing, setTesting] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [focusText, setFocusText] = useState<string | null>(null)
 
   const shownTitle = titleTouched ? title : autoTitle(type, config)
   const draft: Exercise = { id: initial?.id ?? 'test', type, title: shownTitle || TYPE_LABEL[type], config, active: initial?.active ?? true, position: initial?.position ?? nextPosition }
@@ -73,7 +76,7 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
     setType(t)
     if (family(t) !== family(type)) setConfig(defaultConfig(t))
   }
-  const upd = (patch: Partial<CollectionConfig & SuiteConfig & TableConfig & AlphabetConfig>) => setConfig(c => ({ ...c, ...patch }) as AnyConfig)
+  const upd = (patch: Partial<CollectionConfig & SuiteConfig & TableConfig & AlphabetConfig & SonConfig>) => setConfig(c => ({ ...c, ...patch }) as AnyConfig)
 
   const save = async () => {
     setBusy(true); setErr('')
@@ -84,8 +87,8 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
 
   if (testing) return <Runner exercise={draft} test onExit={() => setTesting(false)} />
 
-  const c = config as CollectionConfig & SuiteConfig & TableConfig & AlphabetConfig
-  const invalid = type !== 'alphabet' && c.min >= c.max
+  const c = config as CollectionConfig & SuiteConfig & TableConfig & AlphabetConfig & SonConfig
+  const invalid = type === 'son' ? !c.focus.some(hasSon) && !c.extra : type !== 'alphabet' && c.min >= c.max
 
   return (
     <div className="editor">
@@ -98,7 +101,7 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
         <div key={sub.id}>
           <div className="types-label">{sub.label}</div>
           <div className="types">
-            {(['entoure', 'combien', 'suite', 'table', 'alphabet'] as ExerciseType[]).filter(t => TYPE_SUBJECT[t] === sub.id).map(t => (
+            {(['entoure', 'combien', 'suite', 'table', 'alphabet', 'son'] as ExerciseType[]).filter(t => TYPE_SUBJECT[t] === sub.id).map(t => (
               <button key={t} className={'type-card' + (t === type ? ' on' : '')} onClick={() => changeType(t)} aria-pressed={t === type}>
                 <Thumb ex={{ ...draft, type: t, config: family(t) === family(type) ? config : defaultConfig(t) }} />
                 <b>{TYPE_LABEL[t]}</b>
@@ -110,7 +113,27 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
       <p className="help">{TYPE_HELP[type]}</p>
 
       <div className="form-grid">
-        {type === 'alphabet' ? (
+        {type === 'son' ? (
+          <>
+            <div className="field wide">
+              <label htmlFor="focus">Mots à travailler (un par ligne ou séparés par des virgules)</label>
+              <textarea id="focus" rows={4} value={focusText ?? c.focus.join(', ')}
+                onChange={e => { setFocusText(e.target.value); upd({ focus: e.target.value.split(/[\n,;]+/).map(w => w.trim().toLowerCase()).filter(Boolean) }) }} />
+              {(() => {
+                const bad = c.focus.filter(w => !hasSon(w))
+                const traps = c.focus.filter(w => hasSon(w) && isTrap(w))
+                return <>
+                  {traps.length > 0 && <small>Mots pièges repérés : {traps.join(', ')}</small>}
+                  {bad.length > 0 && <small className="error">Sans son [on] écrit on/om, ignorés : {bad.join(', ')}</small>}
+                </>
+              })()}
+            </div>
+            <Chips label="Autres mots" value={c.extra ? 1 : 0} onChange={v => upd({ extra: v === 1 })}
+              options={[{ v: 1, l: 'Ajouter des mots au hasard' }, { v: 0, l: 'Seulement mes mots' }]} />
+            <Chips label="La règle" value={c.showRule ? 1 : 0} onChange={v => upd({ showRule: v === 1 })}
+              options={[{ v: 1, l: 'Montrer au début' }, { v: 0, l: 'Sur demande' }]} />
+          </>
+        ) : type === 'alphabet' ? (
           <>
             <div className="field wide">
               <span className="label">Parties à travailler</span>

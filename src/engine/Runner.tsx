@@ -6,9 +6,11 @@ import { makeRound, type Question } from './generate'
 import { SuiteQ } from './SuiteQ'
 import { TableQ } from './TableQ'
 import { AlphaQ } from './AlphaQ'
+import { SonQ, SonRule } from './SonQ'
+import { isTrap } from './sons'
 import { LETTER_NAME } from './alphabet'
 import { say, sounds } from './audio'
-import type { AlphabetConfig, Exercise } from './types'
+import type { AlphabetConfig, Exercise, SonConfig } from './types'
 import { words } from './words'
 
 export interface AttemptDraft {
@@ -38,6 +40,8 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
   const [results, setResults] = useState<boolean[]>([])
   const [phase, setPhase] = useState<'play' | 'solved' | 'end'>('play')
   const [msg, setMsg] = useState<{ kind: 'ok' | 'no'; title: string; sub?: string } | null>(null)
+  // Règle affichée avant la partie (son on/om) ou à la demande.
+  const [rule, setRule] = useState(exercise.type === 'son' && (exercise.config as SonConfig).showRule !== false)
   // tries = erreurs sur la case en cours ; misses = erreurs sur toute la question (pour l'étoile)
   const tries = useRef(0)
   const misses = useRef(0)
@@ -52,6 +56,7 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
       return { text: <>Entoure la collection de <strong>{q.target}</strong> balles de tennis.</>, speech: `Entoure la collection de ${words(q.target)} balles de tennis.` }
     if (exercise.type === 'combien')
       return { text: <>Combien de balles de tennis ?</>, speech: 'Combien de balles de tennis ?' }
+    if (q.kind === 'son') return { text: <>Complète le mot avec <strong>on</strong> ou <strong>om</strong>.</>, speech: `Complète le mot ${q.word} avec o, n, ou o, m.` }
     if (q.kind === 'alpha') {
       if (q.skill === 'suite') return { text: <>Quelle lettre manque ?</>, speech: "Quelle lettre manque dans l'alphabet ?" }
       if (q.skill === 'position') {
@@ -95,7 +100,9 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
       tries.current++
       misses.current++
       sounds.bad()
-      const hint = q.kind === 'alpha'
+      const hint = q.kind === 'son'
+        ? (isTrap(q.word) ? "C'est un mot piège : il ne suit pas la règle !" : 'Regarde la lettre juste après : est-ce un m, un b ou un p ?')
+        : q.kind === 'alpha'
         ? (q.skill === 'voyelles' ? "Ce n'est pas une voyelle. Cherche encore !"
           : q.skill === 'ranger' ? "Regarde la première lettre de chaque mot. Laquelle vient en premier dans l'alphabet ?"
           : "Récite l'alphabet dans ta tête : a, b, c, d…")
@@ -118,6 +125,9 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
       const t = q.target, p = Math.floor(t / 10), u = t % 10
       sub = `${p} paquet${p > 1 ? 's' : ''} de 10${u ? ` et ${u} balle${u > 1 ? 's' : ''}` : ''} = ${t} (${words(t)})`
       say(`${words(t)} balles ! ${first ? praise : ''}`)
+    } else if (q.kind === 'son') {
+      sub = isTrap(q.word) ? `« ${q.word} » est un mot piège : apprends-le par cœur.` : `« ${q.word} »`
+      say(`${q.word}. ${praise}`)
     } else if (q.kind === 'alpha') {
       if (q.skill === 'suite') sub = q.seq.map(L).join('  ')
       else if (q.skill === 'position') sub = q.rel === 'entre' ? `Entre ${L(q.a)} et ${L(q.b!)}, il y a ${L(q.answer)}.` : q.rel === 'avant' ? `Avant ${L(q.a)}, il y a ${L(q.answer)}.` : `Après ${L(q.a)}, il y a ${L(q.answer)}.`
@@ -171,7 +181,9 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
         <span className="count">{Math.min(idx + 1, round.length)} / {round.length}</span>
       </div>
 
-      {phase === 'end' ? (
+      {rule ? (
+        <SonRule onClose={() => setRule(false)} cta={idx === 0 && phase === 'play' && results.length === 0 ? "J'ai compris, on joue !" : 'Revenir au jeu'} />
+      ) : phase === 'end' ? (
         <div className="end">
           <div className="stars">
             {Array.from({ length: stars }, (_, i) => <span key={i} style={{ animationDelay: `${i * 0.12}s` }}><Ball /></span>)}
@@ -190,6 +202,7 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" /><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" /></svg>
             </button>
             <span>{prompt.text}</span>
+            {exercise.type === 'son' && <button className="btn ghost small rule-btn" onClick={() => setRule(true)}>La règle</button>}
           </div>
           {exercise.type === 'entoure' && q.kind === 'collection' && (
             <>
@@ -199,6 +212,9 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
           )}
           {exercise.type === 'combien' && q.kind === 'collection' && (
             <CombienQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
+          )}
+          {q.kind === 'son' && (
+            <SonQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
           )}
           {q.kind === 'alpha' && (
             <AlphaQ key={idx} q={q} capitals={caps} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />

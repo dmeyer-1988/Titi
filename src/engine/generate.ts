@@ -1,4 +1,5 @@
-import type { AlphabetConfig, CollectionConfig, Exercise, SuiteConfig, TableConfig } from './types'
+import type { AlphabetConfig, CollectionConfig, Exercise, SonConfig, SuiteConfig, TableConfig } from './types'
+import { hasSon, SON_BANK } from './sons'
 import { alphaKey, alphaQuestion, alphaSkills, type AlphaQuestion } from './alphabet'
 
 export interface CollectionQuestion {
@@ -23,7 +24,11 @@ export interface TableQuestion {
   /** cases à compléter par l'enfant */
   blanks: string[]
 }
-export type Question = CollectionQuestion | SuiteQuestion | TableQuestion | AlphaQuestion
+export interface SonQuestion {
+  kind: 'son'
+  word: string
+}
+export type Question = CollectionQuestion | SuiteQuestion | TableQuestion | AlphaQuestion | SonQuestion
 
 export const cellKey = (r: number, c: number) => `${r},${c}`
 export function cellValue(q: TableQuestion, r: number, c: number): number {
@@ -129,7 +134,22 @@ function tableQuestion(c: TableConfig): TableQuestion {
   return { kind: 'table', rows, cols, blanks }
 }
 
+function sonRound(c: SonConfig): SonQuestion[] {
+  const n = clamp(c.questions ?? 12, 3, 30)
+  const focus = [...new Set((c.focus || []).map(w => w.trim().toLowerCase()).filter(hasSon))]
+  const words = shuffle([...focus]).slice(0, n)
+  if (c.extra !== false) {
+    const pool = shuffle(SON_BANK.filter(w => !words.includes(w)))
+    while (words.length < n && pool.length) words.push(pool.pop()!)
+  }
+  // Moins de mots que de questions : on répète les mots à travailler.
+  let i = 0
+  while (words.length < n && focus.length) words.push(focus[i++ % focus.length])
+  return shuffle(words).map(word => ({ kind: 'son', word }))
+}
+
 export function makeRound(ex: Exercise): Question[] {
+  if (ex.type === 'son') return sonRound(ex.config as SonConfig)
   const n = clamp((ex.config as { questions?: number }).questions ?? 10, ex.type === 'table' ? 1 : 3, 20)
   const out: Question[] = []
   const seen = new Set<string>()
@@ -159,6 +179,7 @@ export function makeRound(ex: Exercise): Question[] {
 function key(q: Question) {
   if (q.kind === 'collection') return 'c' + q.target
   if (q.kind === 'alpha') return alphaKey(q)
+  if (q.kind === 'son') return 'o' + q.word
   if (q.kind === 'table') return 't' + q.rows.join(',') + '|' + q.cols.join(',')
   return 's' + q.seq.join(',') + '|' + q.blanks.join(',')
 }

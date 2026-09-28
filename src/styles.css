@@ -433,6 +433,63 @@ button.ltile:active:not(:disabled) { translate: 0 3px; box-shadow: 0 1px 0 var(-
   .slot { min-width: 0; flex: 1 1 100%; }
 }
 
+/* ---------- Son on / om ---------- */
+.son-q { display: flex; flex-direction: column; align-items: center; gap: 26px; margin-top: 8px; }
+.son-word-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: center; }
+.son-word { font-family: "Andika", var(--body); font-size: clamp(52px, 10vw, 84px); line-height: 1.1; color: var(--ink); display: flex; align-items: baseline; }
+.son-gap {
+  display: inline-grid; place-items: center; min-width: 1.6em; height: 1.05em; margin: 0 4px; padding: 0 6px;
+  border: 3px dashed var(--rule); border-radius: 14px; color: var(--ink); font-weight: 700; align-self: center;
+}
+.son-gap.current { border-color: #C4602A; background: #FBE7D6; }
+.son-gap.ok { border-style: solid; }
+.son-gap.ok.on { border-color: var(--court); background: var(--court-soft); color: var(--court); }
+.son-gap.ok.om { border-color: #C4602A; background: #FBE7D6; color: #C4602A; }
+.son-mbp { color: #C4602A; text-decoration: underline; text-decoration-thickness: 4px; text-underline-offset: 8px; }
+.son-choices { display: flex; gap: 24px; }
+.son-choice {
+  font-family: "Andika", var(--body); font-size: clamp(48px, 8vw, 64px); font-weight: 700; min-width: 170px; height: 120px;
+  border-radius: 24px; border: 0; cursor: pointer; color: #fff;
+}
+.son-choice.on { background: var(--court); box-shadow: 0 6px 0 var(--court-deep); }
+.son-choice.om { background: #C4602A; box-shadow: 0 6px 0 #9A4A1F; }
+.son-choice:active:not(:disabled) { translate: 0 4px; box-shadow: none; }
+.son-choice:disabled { opacity: .45; cursor: default; }
+.son-choice.wrong-now { animation: shake .4s; }
+.son-choice:focus-visible { outline: 3px solid var(--ink); outline-offset: 4px; }
+.son-why { list-style: none; margin: 0; padding: 12px 18px; background: var(--tint); border-radius: 14px; font-size: 19px; display: flex; flex-direction: column; gap: 4px; }
+.trap-badge { display: inline-block; background: var(--gold); color: var(--ink); font-weight: 700; font-size: 15px; padding: 4px 12px; border-radius: 999px; letter-spacing: .02em; }
+.rule-btn { margin-left: auto; }
+
+.son-rule { max-width: 720px; margin: 10px auto 0; display: flex; flex-direction: column; gap: 14px; }
+.son-rule h2 { font-size: 40px; color: var(--ink); margin: 0; }
+.son-rule .sound { color: #C4602A; }
+.rule-block { background: var(--tint); border-radius: 18px; padding: 16px 20px; }
+.rule-block p { margin: 0; font-size: 22px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.rule-block p.ex { display: block; margin-top: 8px; font-family: "Andika", var(--body); font-size: 26px; color: var(--ink); }
+.rule-block .ex b { color: #C4602A; }
+.rule-block .ex i { font-style: normal; color: #C4602A; text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 5px; }
+.rule-block .ex small { font-size: 16px; color: var(--ink-soft); }
+.rule-block.main { background: #FBE7D6; box-shadow: inset 0 0 0 3px #C4602A; }
+.rule-block.trap { background: #FDF3D0; }
+.chip { font-family: "Andika", var(--body); font-weight: 700; font-size: 26px; border-radius: 12px; padding: 2px 14px; color: #fff; }
+.chip.on { background: var(--court); }
+.chip.om { background: #C4602A; }
+.chip.l { background: #fff; color: #C4602A; box-shadow: inset 0 0 0 2.5px #C4602A; padding: 2px 12px; }
+.rule-block.plain .ex b { color: var(--court); }
+.rule-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; margin-top: 4px; }
+
+.son-thumb .w { font-family: "Andika", var(--body); font-size: 34px; color: var(--ink); background: #fff; border: 2px solid var(--rule); border-radius: 12px; padding: 4px 14px; }
+.son-thumb b { color: #C4602A; }
+.son-thumb b.on { color: var(--court); }
+.ex-list .son-thumb .w, .type-card .son-thumb .w { font-size: 22px; padding: 2px 8px; }
+textarea { font: inherit; font-size: 18px; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--rule); background: #fff; width: 100%; resize: vertical; user-select: text; -webkit-user-select: text; }
+textarea:focus { border-color: var(--court); outline: none; }
+
+@media (max-width: 520px) {
+  .son-choice { min-width: 130px; height: 100px; }
+}
+
 @keyframes pop { from { scale: .2; opacity: 0; } to { scale: 1; opacity: 1; } }
 @keyframes shake { 0%, 100% { translate: 0; } 20% { translate: -8px; } 40% { translate: 8px; } 60% { translate: -5px; } 80% { translate: 5px; } }
 @keyframes bounce-in { 0% { translate: 0 -40px; opacity: 0; } 60% { translate: 0 6px; opacity: 1; } 100% { translate: 0 0; } }

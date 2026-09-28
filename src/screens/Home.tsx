@@ -3,6 +3,13 @@ import type { Child, Exercise, Subject } from '../engine/types'
 import { SUBJECTS, TYPE_LABEL, TYPE_SUBJECT } from '../engine/types'
 
 export function Thumb({ ex }: { ex: Exercise }) {
+  if (ex.type === 'son') {
+    return (
+      <div className="thumb son-thumb" aria-hidden="true">
+        <span className="w">p<b>om</b>p<b className="on">on</b></span>
+      </div>
+    )
+  }
   if (ex.type === 'alphabet') {
     const k = (ex.config as { skills?: string[] }).skills || []
     const letters = k.length === 1 && k[0] === 'voyelles' ? ['a', 'b', 'e'] : k.length === 1 && k[0] === 'ranger' ? ['arbre'] : ['a', 'b', '']

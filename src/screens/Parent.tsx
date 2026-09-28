@@ -112,6 +112,10 @@ function ExerciseList({ exercises, onChanged, onEdit }: Props & { onEdit: (e: Ex
 
 function describe(ex: Exercise) {
   const c = ex.config as unknown as Record<string, number | boolean | string>
+  if (ex.type === 'son') {
+    const a = ex.config as unknown as { focus: string[]; extra: boolean }
+    return `${a.focus.length} mot${a.focus.length > 1 ? 's' : ''} à travailler${a.extra ? ' + mots au hasard' : ''} : ${a.focus.slice(0, 5).join(', ')}${a.focus.length > 5 ? '…' : ''}`
+  }
   if (ex.type === 'alphabet') {
     const a = ex.config as unknown as { skills: string[]; capitals: boolean }
     const L: Record<string, string> = { suite: 'lettre qui manque', position: 'avant/après/entre', voyelles: 'voyelles', ranger: 'ranger des mots' }
