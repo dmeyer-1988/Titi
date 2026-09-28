@@ -13,10 +13,14 @@ const GROUP_COLORS = ['#2D6A9F', '#D6453A', '#2F8F55', '#9B6FA8', '#E07A4B', '#B
  */
 export function PaquetsQ({ q: raw, onAttempt, onSolved, onNudge }: QProps<PaquetsQuestion>) {
   // Sur téléphone (écran étroit), on tourne le terrain en portrait pour garder de grosses balles.
-  const [q] = useState<PaquetsQuestion>(() =>
-    window.innerWidth < 640 && raw.cols > raw.rows
+  // Puis on laisse un bord vide tout autour (M cases) pour pouvoir tourner autour des balles du bord.
+  const [q] = useState<PaquetsQuestion>(() => {
+    const t = window.innerWidth < 640 && raw.cols > raw.rows
       ? { ...raw, cols: raw.rows, rows: raw.cols, balls: raw.balls.map(([x, y]) => [y, x] as [number, number]) }
-      : raw)
+      : raw
+    const M = 0.9, C = t.cols + 2 * M, R = t.rows + 2 * M
+    return { ...t, cols: C, rows: R, balls: t.balls.map(([x, y]) => [(x * t.cols + M) / C, (y * t.rows + M) / R] as [number, number]) }
+  })
   const field = useRef<HTMLDivElement>(null)
   const pad = useRef<DrawPadHandle>(null)
   const [groups, setGroups] = useState<{ ids: number[]; path: Pt[] }[]>([])
@@ -50,7 +54,7 @@ export function PaquetsQ({ q: raw, onAttempt, onSolved, onNudge }: QProps<Paquet
         const d = Math.hypot(bx * w - x, by * h - y)
         if (d < bd) { bd = d; best = i }
       })
-      if (best < 0 || bd > (w / q.cols) * 0.6) return
+      if (best < 0 || bd > (w / q.cols) * 0.75) return
       if (singles.includes(best)) { setSingles(s => s.filter(i => i !== best)); sounds.tick(2); return }
       if (singles.length >= 9) { onNudge('Pas plus de 9 balles seules : avec 10, fais plutôt un paquet !'); sounds.bad(); return }
       setSingles(s => [...s, best]); sounds.tick(4)
