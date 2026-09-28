@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { BallDefs } from './engine/Balls'
-import { Runner } from './engine/Runner'
-import type { Exercise, Subject } from './engine/types'
+import { Runner, type RoundItem } from './engine/Runner'
+import type { Attempt, Exercise, Subject } from './engine/types'
 import { fetchAttempts, fetchFamily, flushQueue, readCache, recordAttempt, type Family } from './lib/store'
 import { configured, supabase } from './lib/supabase'
 import { Home } from './screens/Home'
@@ -15,10 +15,23 @@ import { STICKERS } from './album/catalog'
 import { fetchAlbum } from './lib/albumStore'
 import { getMembership, type Membership } from './lib/teamStore'
 import { Team } from './screens/Team'
+import { buildDaily, completeDaily, fetchDaily } from './lib/daily'
 
-type View = { name: 'home' } | { name: 'play'; ex: Exercise } | { name: 'pin' } | { name: 'parent' } | { name: 'album' } | { name: 'team' }
+type View = { name: 'home' } | { name: 'play'; ex: Exercise } | { name: 'pin' } | { name: 'parent' } | { name: 'album' } | { name: 'team' } | { name: 'daily'; items: RoundItem[] }
 
 const CHILD_KEY = 'balles-child'
+
+/** Jours joués cette semaine (lundi = bit 0), heure locale. */
+function weekMask(attempts: Attempt[]) {
+  const now = new Date(), monday = new Date(now)
+  monday.setHours(0, 0, 0, 0); monday.setDate(monday.getDate() - ((now.getDay() + 6) % 7))
+  let m = 0
+  for (const a of attempts) {
+    const d = new Date(a.created_at)
+    if (d >= monday) m |= 1 << ((d.getDay() + 6) % 7)
+  }
+  return m
+}
 
 export default function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined)
@@ -31,6 +44,8 @@ export default function App() {
   const [earned, setEarned] = useState(0)
   const [album, setAlbum] = useState<{ spent: number; owned: number } | null>(null)
   const [team, setTeam] = useState<Membership | null>(null)
+  const [attempts, setAttempts] = useState<Attempt[]>([])
+  const [daily, setDaily] = useState<{ doneToday: boolean; bonus: number }>({ doneToday: false, bonus: 0 })
   const [offline, setOffline] = useState(!navigator.onLine)
   const [subject, setSubject] = useState<Subject | null>(null)
 
@@ -84,7 +99,9 @@ export default function App() {
       for (const a of all) if (a.first_try && a.correct) { e++; if (a.exercise_id) s[a.exercise_id] = (s[a.exercise_id] || 0) + 1 }
       setStars(s)
       setEarned(e)
+      setAttempts(all)
     } catch { /* hors ligne : on garde les étoiles affichées */ }
+    try { setDaily(await fetchDaily(child.id)) } catch { /* hors ligne */ }
     try {
       const al = await fetchAlbum(child.id)
       setAlbum({ spent: al.spent, owned: STICKERS.filter(x => al.counts.get(x.id)).length })
@@ -135,8 +152,29 @@ export default function App() {
         />
       </div>
     )
+  } else if (view.name === 'daily') {
+    const dailyEx: Exercise = { id: 'daily', type: 'calcul', title: 'Défi du jour', config: family.exercises[0]?.config, active: true, position: 0 } as Exercise
+    screen = (
+      <div className="sheet">
+        <Runner
+          exercise={dailyEx}
+          items={view.items}
+          childName={child.name}
+          onRecord={a => {
+            recordAttempt(child.id, a)
+            if (a.first_try && a.correct) setEarned(e => e + 1)
+          }}
+          onFinished={() => {
+            if (daily.doneToday) return
+            setDaily(d => ({ doneToday: true, bonus: d.bonus + 2 }))
+            completeDaily(child.id).catch(() => { /* hors ligne : réessayé à la prochaine partie */ })
+          }}
+          onExit={() => { setView({ name: 'home' }); void loadStars() }}
+        />
+      </div>
+    )
   } else if (view.name === 'album') {
-    screen = <Album childId={child.id} earned={earned} price={family.packPrice ?? 10} onExit={() => { setView({ name: 'home' }); void loadStars() }} />
+    screen = <Album childId={child.id} earned={earned + daily.bonus} price={family.packPrice ?? 10} onExit={() => { setView({ name: 'home' }); void loadStars() }} />
   } else if (view.name === 'team' && team) {
     screen = <Team childId={child.id} membership={team} onExit={() => { setView({ name: 'home' }); void loadStars() }} />
   } else if (view.name === 'pin') {
@@ -170,7 +208,13 @@ export default function App() {
         child={child}
         exercises={family.exercises}
         stars={stars}
-        wallet={Math.max(0, earned - (album?.spent ?? 0))}
+        wallet={Math.max(0, earned + daily.bonus - (album?.spent ?? 0))}
+        packPrice={family.packPrice ?? 10}
+        mascotName={child.mascot_name || 'Loulou'}
+        weekDays={weekMask(attempts)}
+        dailyDone={daily.doneToday}
+        dailyReady={family.exercises.some(e => e.active && e.type !== 'table')}
+        onDaily={() => setView({ name: 'daily', items: buildDaily(family.exercises, attempts) })}
         albumOwned={album?.owned ?? null}
         albumTotal={STICKERS.length}
         onAlbum={() => setView({ name: 'album' })}

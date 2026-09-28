@@ -5,6 +5,7 @@ import { addChild, deleteExercise, moveExercise, pendingCount, renameChild, setE
 import { supabase } from '../lib/supabase'
 import { setPackPrice } from '../lib/albumStore'
 import { TeamSettings } from './TeamSettings'
+import { setMascotName } from '../lib/daily'
 import { Editor } from './Editor'
 import { Thumb } from './Home'
 import { Stats } from './Stats'
@@ -58,7 +59,7 @@ export function Parent(p: Props) {
       ) : tab === 'suivi' ? (
         <Stats child={p.child} children={p.children} exercises={p.exercises} onPickChild={p.onPickChild} />
       ) : (
-        <Profile key={p.children.map(c => c.id + c.name).join()} {...p} />
+        <Profile key={p.children.map(c => c.id + c.name + (c.mascot_name || '')).join()} {...p} />
       )}
     </div>
   )
@@ -139,6 +140,7 @@ function Profile({ uid, email, children, child, pin, packPrice, onChanged }: Pro
   const [price, setPrice] = useState(packPrice)
   const [names, setNames] = useState<Record<string, string>>(() => Object.fromEntries(children.map(c => [c.id, c.name])))
   const [newName, setNewName] = useState('')
+  const [mascots, setMascots] = useState<Record<string, string>>(() => Object.fromEntries(children.map(c => [c.id, c.mascot_name || 'Loulou'])))
   const [newPin, setNewPin] = useState('')
   const [pw1, setPw1] = useState('')
   const [pw2, setPw2] = useState('')
@@ -224,6 +226,14 @@ function Profile({ uid, email, children, child, pin, packPrice, onChanged }: Pro
           <div className="row" key={c.id}>
             <input id={`name-${c.id}`} aria-label="Prénom" value={names[c.id] ?? ''} maxLength={40} onChange={e => setNames(n => ({ ...n, [c.id]: e.target.value }))} />
             <button className="btn ghost small" disabled={!names[c.id]?.trim() || names[c.id] === c.name} onClick={() => run('kids', () => renameChild(c.id, names[c.id]), 'Prénom enregistré.')}>Renommer</button>
+          </div>
+        ))}
+        <p className="muted">Le nom de la loutre, à choisir avec votre enfant :</p>
+        {children.map(c => (
+          <div className="row" key={'m' + c.id}>
+            <span className="mascot-label">🦦 {c.name}</span>
+            <input id={`mascot-${c.id}`} aria-label={`Nom de la mascotte de ${c.name}`} maxLength={20} value={mascots[c.id] ?? ''} onChange={e => setMascots(m => ({ ...m, [c.id]: e.target.value }))} />
+            <button className="btn ghost small" disabled={!mascots[c.id]?.trim() || mascots[c.id] === (c.mascot_name || 'Loulou')} onClick={() => run('kids', () => setMascotName(c.id, mascots[c.id]), 'Nom de la loutre enregistré.')}>Enregistrer</button>
           </div>
         ))}
         <div className="row">

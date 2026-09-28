@@ -25,7 +25,7 @@ function writeCache(uid: string, f: Family) {
 
 export async function fetchFamily(uid: string): Promise<Family> {
   const [c, e, p] = await Promise.all([
-    supabase.from('children').select('id,name').order('created_at'),
+    supabase.from('children').select('id,name,mascot_name').order('created_at'),
     supabase.from('exercises').select('id,type,title,config,active,position,updated_at').order('position').order('created_at'),
     supabase.from('profiles').select('parent_pin,pack_price').eq('user_id', uid).maybeSingle(),
   ])

@@ -1,6 +1,8 @@
 import { Pack } from '../engine/Balls'
 import type { Child, Exercise, Subject } from '../engine/types'
 import { SUBJECTS, TYPE_LABEL, TYPE_SUBJECT } from '../engine/types'
+import { Mascot } from '../mascot/Mascot'
+import type { Mood } from '../mascot/Otter'
 
 export function Thumb({ ex }: { ex: Exercise }) {
   if (ex.type === 'calcul') {
@@ -79,6 +81,12 @@ interface Props {
   exercises: Exercise[]
   stars: Record<string, number>
   wallet: number
+  packPrice: number
+  mascotName: string
+  weekDays: number
+  dailyDone: boolean
+  dailyReady: boolean
+  onDaily: () => void
   albumOwned: number | null
   albumTotal: number
   onAlbum: () => void
@@ -92,108 +100,136 @@ interface Props {
   onParent: () => void
 }
 
-export function Home({ children, child, exercises, stars, wallet, albumOwned, albumTotal, onAlbum, team, onTeam, offline, subject, onSubject, onPickChild, onPlay, onParent }: Props) {
+const DAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+
+/** Ce que dit la loutre en arrivant : on choisit le message le plus utile du moment. */
+function greeting(p: Props): { text: string; mood: Mood } {
+  const h = new Date().getHours()
+  const hello = h < 12 ? 'Bonjour' : h < 18 ? 'Salut' : 'Bonsoir'
+  const days = DAYS.reduce((n, _, i) => n + ((p.weekDays >> i) & 1), 0)
+  const missing = p.packPrice - p.wallet
+  if (!p.dailyDone && p.dailyReady) return { mood: 'hello', text: `${hello} ${p.child.name} ! C'est moi, ${p.mascotName}. Ton défi du jour t'attend !` }
+  if (p.wallet >= p.packPrice) return { mood: 'cheer', text: `Tu as ${p.wallet} étoiles : tu peux ouvrir une pochette dans ton album !` }
+  if (days >= 3) return { mood: 'cheer', text: `Déjà ${days} jours cette semaine, bravo ${p.child.name} !` }
+  if (missing > 0 && missing <= 5) return { mood: 'happy', text: `Plus que ${missing} étoile${missing > 1 ? 's' : ''} pour une nouvelle pochette !` }
+  return { mood: 'hello', text: `${hello} ${p.child.name} ! On joue ensemble ?` }
+}
+
+export function Home(p: Props) {
+  const { children, child, exercises, stars, wallet, packPrice, weekDays, dailyDone, dailyReady, onDaily, albumOwned, albumTotal, onAlbum, team, onTeam, offline, subject, onSubject, onPickChild, onPlay, onParent } = p
   const active = exercises.filter(e => e.active)
   const bySubject = (s: Subject) => active.filter(e => TYPE_SUBJECT[e.type] === s)
   const starsFor = (list: Exercise[]) => list.reduce((a, e) => a + (stars[e.id] || 0), 0)
   const current = subject ? SUBJECTS.find(s => s.id === subject)! : null
   const games = subject ? bySubject(subject) : []
+  const g = greeting(p)
+  const todayIdx = (new Date().getDay() + 6) % 7
+  const packPct = Math.min(100, Math.round((wallet / packPrice) * 100))
+
+  const starIcon = <svg className="star" aria-hidden="true"><use href="#star" /></svg>
+
+  if (current) {
+    return (
+      <div className="sheet">
+        <header className="home-head">
+          <div>
+            <button className="back" onClick={() => onSubject(null)}>
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 5l-7 7 7 7" /></svg>
+              Accueil
+            </button>
+            <h1 className={'subject-title ' + current.id}>{current.label}</h1>
+          </div>
+          <div className="total-stars" aria-label={`${wallet} étoiles`}>{starIcon}<span>{wallet}</span></div>
+        </header>
+        <p className="lead">Choisis un jeu.</p>
+        {games.length === 0 ? (
+          <p className="empty-note">Pas encore de jeu ici. Demande à papa ou maman d'en ajouter un.</p>
+        ) : (
+          <div className="games">
+            {games.map(ex => (
+              <button key={ex.id} className="game" onClick={() => onPlay(ex)}>
+                <Thumb ex={ex} />
+                <span className="game-title">{ex.title}</span>
+                <span className="game-meta">
+                  <span className="type">{TYPE_LABEL[ex.type]}</span>
+                  <span className="mini-stars">{starIcon}{stars[ex.id] || 0}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
-    <div className="sheet">
-      <header className="home-head">
-        <div>
-          {current ? (
-            <>
-              <button className="back" onClick={() => onSubject(null)}>
-                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 5l-7 7 7 7" /></svg>
-                Matières
-              </button>
-              <h1 className={'subject-title ' + current.id}>{current.label}</h1>
-            </>
-          ) : (
-            <>
-              <div className="eyebrow">4<sup>e</sup> HarmoS</div>
-              <h1>Salut {child.name} !</h1>
-            </>
+    <div className="sheet home2">
+      <header className="hello-row">
+        <Mascot mood={g.mood} text={g.text} speak={g.text} size="md" />
+        <div className="hello-side">
+          <div className="total-stars" aria-label={`${wallet} étoiles à dépenser`}>{starIcon}<span>{wallet}</span></div>
+          {children.length > 1 && (
+            <div className="seg kids" role="group" aria-label="Qui joue ?">
+              {children.map(c => <button key={c.id} aria-pressed={c.id === child.id} onClick={() => onPickChild(c.id)}>{c.name}</button>)}
+            </div>
           )}
-        </div>
-        <div className="total-stars" aria-label={`${wallet} étoiles à dépenser`}>
-          <svg className="star" aria-hidden="true"><use href="#star" /></svg>
-          <span>{wallet}</span>
         </div>
       </header>
 
-      {!current && children.length > 1 && (
-        <div className="seg kids" role="group" aria-label="Qui joue ?">
-          {children.map(c => (
-            <button key={c.id} aria-pressed={c.id === child.id} onClick={() => onPickChild(c.id)}>{c.name}</button>
-          ))}
-        </div>
+      {dailyReady && (
+        <button className={'daily' + (dailyDone ? ' done' : '')} onClick={onDaily}>
+          <span className="daily-text">
+            <span className="eyebrow-light">{dailyDone ? 'Défi du jour réussi' : 'Défi du jour'}</span>
+            <b>{dailyDone ? 'Bravo ! Tu peux le rejouer pour t’entraîner.' : '6 questions surprises'}</b>
+            <span className="daily-reward">{dailyDone ? 'Nouveau défi demain' : <>+2 {starIcon} bonus</>}</span>
+          </span>
+          <span className="daily-go" aria-hidden="true">{dailyDone ? '✓' : '▶'}</span>
+        </button>
       )}
 
-      {!current ? (
-        <>
-          <p className="lead">Qu'est-ce qu'on travaille aujourd'hui ?</p>
-          <div className="subjects">
-            {SUBJECTS.map(s => {
-              const list = bySubject(s.id)
-              const empty = list.length === 0
-              return (
-                <button key={s.id} className={'subject ' + s.id} disabled={empty} onClick={() => onSubject(s.id)}>
-                  <SubjectArt id={s.id} />
-                  <span className="subject-name">{s.label}</span>
-                  <span className="subject-meta">
-                    {empty ? <span>Bientôt</span> : (
-                      <>
-                        <span>{list.length} jeu{list.length > 1 ? 'x' : ''}</span>
-                        <span className="mini-stars"><svg className="star" aria-hidden="true"><use href="#star" /></svg>{starsFor(list)}</span>
-                      </>
-                    )}
-                  </span>
-                </button>
-              )
-            })}
-            <button className="subject album-card" onClick={onAlbum}>
-              <span className="album-art" aria-hidden="true">
-                <span className="mini-sticker a">🦁</span><span className="mini-sticker b">🦖</span><span className="mini-sticker c">⚽</span>
-              </span>
-              <span className="subject-name">Mon album</span>
-              <span className="subject-meta">
-                <span>{albumOwned === null ? 'Vignettes à collectionner' : `${albumOwned} / ${albumTotal} vignettes`}</span>
-                <span className="mini-stars"><svg className="star" aria-hidden="true"><use href="#star" /></svg>{wallet}</span>
-              </span>
+      <div className="htiles">
+        {SUBJECTS.map(s => {
+          const list = bySubject(s.id)
+          const empty = list.length === 0
+          return (
+            <button key={s.id} className={'htile ' + s.id} disabled={empty} onClick={() => onSubject(s.id)}>
+              <SubjectArt id={s.id} />
+              <span className="htile-name">{s.label}</span>
+              <span className="htile-meta">{empty ? 'Bientôt' : <>{list.length} jeu{list.length > 1 ? 'x' : ''} · <span className="mini-stars">{starIcon}{starsFor(list)}</span></>}</span>
             </button>
-            {team && (
-              <button className="subject team-card" onClick={onTeam}>
-                <span className="team-art" aria-hidden="true"><span>{team.avatar}</span><span>🤝</span></span>
-                <span className="subject-name">Mon équipe</span>
-                <span className="subject-meta"><span>{team.name}</span></span>
-              </button>
-            )}
-          </div>
-        </>
-      ) : (
-        <>
-          <p className="lead">Choisis un jeu.</p>
-          {games.length === 0 ? (
-            <p className="empty-note">Pas encore de jeu ici. Demande à papa ou maman d'en ajouter un.</p>
-          ) : (
-            <div className="games">
-              {games.map(ex => (
-                <button key={ex.id} className="game" onClick={() => onPlay(ex)}>
-                  <Thumb ex={ex} />
-                  <span className="game-title">{ex.title}</span>
-                  <span className="game-meta">
-                    <span className="type">{TYPE_LABEL[ex.type]}</span>
-                    <span className="mini-stars"><svg className="star" aria-hidden="true"><use href="#star" /></svg>{stars[ex.id] || 0}</span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </>
-      )}
+          )
+        })}
+        <button className="htile album" onClick={onAlbum}>
+          <span className="album-art" aria-hidden="true">
+            <span className="mini-sticker a">🦁</span><span className="mini-sticker b">🦖</span><span className="mini-sticker c">⚽</span>
+          </span>
+          <span className="htile-name">Mon album</span>
+          <span className="htile-meta">{albumOwned === null ? 'Vignettes à collectionner' : `${albumOwned} / ${albumTotal} vignettes`}</span>
+        </button>
+        {team && (
+          <button className="htile team" onClick={onTeam}>
+            <span className="team-art" aria-hidden="true"><span>{team.avatar}</span><span>🤝</span></span>
+            <span className="htile-name">Mon équipe</span>
+            <span className="htile-meta">{team.name}</span>
+          </button>
+        )}
+      </div>
+
+      <section className="progress-strip">
+        <div className="week">
+          <span className="ps-label">Ma semaine</span>
+          <span className="days">
+            {DAYS.map((d, i) => <i key={i} className={((weekDays >> i) & 1 ? 'on' : '') + (i === todayIdx ? ' today' : '')}>{d}</i>)}
+          </span>
+        </div>
+        <button className="next-pack" onClick={onAlbum}>
+          <span className="ps-label">Prochaine pochette</span>
+          <span className="pack-gauge" role="meter" aria-valuenow={Math.min(wallet, packPrice)} aria-valuemin={0} aria-valuemax={packPrice}>
+            <span style={{ width: `${packPct}%` }} />
+          </span>
+          <span className="pack-count">{Math.min(wallet, packPrice)} / {packPrice} {starIcon}</span>
+        </button>
+      </section>
 
       <footer className="home-foot">
         {offline && <span className="pill muted">Hors ligne · les réponses seront envoyées plus tard</span>}

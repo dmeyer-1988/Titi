@@ -109,6 +109,7 @@ export interface Exercise {
 export interface Child {
   id: string
   name: string
+  mascot_name?: string
 }
 
 export interface Attempt {

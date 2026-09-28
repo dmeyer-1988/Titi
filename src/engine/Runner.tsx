@@ -14,6 +14,7 @@ import { LETTER_NAME } from './alphabet'
 import { say, sounds } from './audio'
 import type { AlphabetConfig, Exercise, SonConfig } from './types'
 import { words } from './words'
+import { Mascot } from '../mascot/Mascot'
 
 export interface AttemptDraft {
   exercise_id: string | null
@@ -25,8 +26,14 @@ export interface AttemptDraft {
   first_try: boolean
 }
 
+export interface RoundItem { ex: Exercise; q: Question }
+
 interface Props {
   exercise: Exercise
+  /** Défi du jour : questions venant de plusieurs exercices. */
+  items?: RoundItem[]
+  /** Appelé une fois à la fin de la partie. */
+  onFinished?: (stars: number, total: number) => void
   childName?: string
   /** Mode test (espace parent) : rien n'est enregistré. */
   test?: boolean
@@ -36,27 +43,29 @@ interface Props {
 
 const PRAISE = ['Bravo', 'Super', 'Génial', 'Parfait', 'Excellent']
 
-export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
-  const [round, setRound] = useState<Question[]>(() => makeRound(exercise))
+export function Runner({ exercise, items, onFinished, childName, test, onRecord, onExit }: Props) {
+  const build = (): RoundItem[] => items ?? makeRound(exercise).map(q => ({ ex: exercise, q }))
+  const [round, setRound] = useState<RoundItem[]>(build)
   const [idx, setIdx] = useState(0)
   const [results, setResults] = useState<boolean[]>([])
   const [phase, setPhase] = useState<'play' | 'solved' | 'end'>('play')
   const [msg, setMsg] = useState<{ kind: 'ok' | 'no'; title: string; sub?: string } | null>(null)
   // Règle affichée avant la partie (son on/om) ou à la demande.
-  const [rule, setRule] = useState(exercise.type === 'son' && (exercise.config as SonConfig).showRule !== false)
+  const [rule, setRule] = useState(!items && exercise.type === 'son' && (exercise.config as SonConfig).showRule !== false)
   // tries = erreurs sur la case en cours ; misses = erreurs sur toute la question (pour l'étoile)
   const tries = useRef(0)
   const misses = useRef(0)
-  const q = round[idx]
+  const q = round[idx]?.q
+  const ex = round[idx]?.ex ?? exercise
   const name = childName?.trim()
-  const caps = exercise.type === 'alphabet' && Boolean((exercise.config as AlphabetConfig).capitals)
+  const caps = ex.type === 'alphabet' && Boolean((ex.config as AlphabetConfig).capitals)
   const L = (l: string) => (caps ? l.toUpperCase() : l)
 
   const prompt = useMemo(() => {
     if (!q) return { text: '', speech: '' }
-    if (exercise.type === 'entoure' && q.kind === 'collection')
+    if (ex.type === 'entoure' && q.kind === 'collection')
       return { text: <>Entoure la collection de <strong>{q.target}</strong> balles de tennis.</>, speech: `Entoure la collection de ${words(q.target)} balles de tennis.` }
-    if (exercise.type === 'combien')
+    if (ex.type === 'combien')
       return { text: <>Combien de balles de tennis ?</>, speech: 'Combien de balles de tennis ?' }
     if (q.kind === 'calc') {
       const W = (k: 'a' | 'b' | 'c') => (q.blank === k ? 'combien' : words(q[k]))
@@ -77,32 +86,23 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
     if (q.kind === 'table')
       return { text: <>Complète les cases vides du tableau.</>, speech: 'Complète les cases vides du tableau. Touche une case vide, puis écris le nombre.' }
     return { text: <>Complète la suite.</>, speech: 'Complète la suite. Trouve les nombres qui manquent.' }
-  }, [q, exercise.type])
+  }, [q, ex.type])
 
   const onAttempt = (given: string, expected: string, correct: boolean) => {
     const first = tries.current === 0
     if (!test && onRecord) {
       onRecord({
-        exercise_id: exercise.id,
-        exercise_type: exercise.type,
+        exercise_id: ex.id,
+        exercise_type: ex.type,
         prompt: q as unknown as Record<string, unknown>,
         expected, given, correct, first_try: first,
       })
     }
     if (correct) {
       sounds.good()
-      if (q.kind === 'suite' || q.kind === 'table') setMsg(null)
-      if (q.kind === 'alpha') {
-      if (q.skill === 'suite') return { text: <>Quelle lettre manque ?</>, speech: "Quelle lettre manque dans l'alphabet ?" }
-      if (q.skill === 'position') {
-        if (q.rel === 'entre') return { text: <>Quelle lettre vient entre <strong>{L(q.a)}</strong> et <strong>{L(q.b!)}</strong> ?</>, speech: `Quelle lettre vient entre ${LETTER_NAME[q.a]} et ${LETTER_NAME[q.b!]} ?` }
-        const w = q.rel === 'avant' ? 'juste avant' : 'juste après'
-        return { text: <>Quelle lettre vient {w} <strong>{L(q.a)}</strong> ?</>, speech: `Quelle lettre vient ${w} ${LETTER_NAME[q.a]} ?` }
-      }
-      if (q.skill === 'voyelles') return { text: <>Touche toutes les <strong>voyelles</strong>.</>, speech: 'Touche toutes les voyelles.' }
-      return { text: <>Range les mots dans l'ordre alphabétique.</>, speech: "Range les mots dans l'ordre alphabétique. Regarde bien la première lettre de chaque mot." }
-    }
-    if (q.kind === 'table') tries.current = 0
+      if (q.kind !== 'collection') setMsg(null)
+      // Questions à plusieurs cases : chaque case repart « du premier coup ».
+      if (q.kind === 'table' || q.kind === 'alpha' || q.kind === 'son') tries.current = 0
     } else {
       tries.current++
       misses.current++
@@ -119,7 +119,7 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
         ? 'Additionne le nombre de la ligne et celui de la colonne.'
         : q.kind === 'suite'
         ? `Regarde de combien on avance à chaque fois.`
-        : exercise.type === 'entoure' ? 'Compte les paquets de 10.' : "Compte d'abord les paquets de 10, puis les balles seules."
+        : ex.type === 'entoure' ? 'Compte les paquets de 10.' : "Compte d'abord les paquets de 10, puis les balles seules."
       setMsg({ kind: 'no', title: 'Essaie encore !', sub: hint })
     }
   }
@@ -167,11 +167,12 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
       sounds.fanfare()
       const s = results.filter(Boolean).length
       say(endMessage(s, round.length, name))
+      onFinished?.(s, round.length)
     }
   }
 
   const restart = () => {
-    setRound(makeRound(exercise)); setIdx(0); setResults([]); setPhase('play'); setMsg(null); tries.current = 0; misses.current = 0
+    setRound(build()); setIdx(0); setResults([]); setPhase('play'); setMsg(null); tries.current = 0; misses.current = 0
   }
 
   const stars = results.filter(Boolean).length
@@ -184,6 +185,7 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
           Menu
         </button>
         <div className="runner-title">{exercise.title}{test && <span className="pill">Test</span>}</div>
+        {items && ex && <span className="pill muted from-game">{ex.title}</span>}
       </div>
 
       <div className="progress" aria-label={`Question ${Math.min(idx + 1, round.length)} sur ${round.length}`}>
@@ -198,13 +200,13 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
         <SonRule onClose={() => setRule(false)} cta={idx === 0 && phase === 'play' && results.length === 0 ? "J'ai compris, on joue !" : 'Revenir au jeu'} />
       ) : phase === 'end' ? (
         <div className="end">
+          <Mascot size="lg" mood="cheer" text={endMessage(stars, round.length, name)} />
           <div className="stars">
             {Array.from({ length: stars }, (_, i) => <span key={i} style={{ animationDelay: `${i * 0.12}s` }}><Star /></span>)}
           </div>
           <div className="big">{stars} / {round.length}</div>
-          <p>{endMessage(stars, round.length, name)}</p>
           <div className="end-actions">
-            <button className="btn" onClick={restart}>Rejouer</button>
+            {!items && <button className="btn" onClick={restart}>Rejouer</button>}
             <button className="btn ghost" onClick={onExit}>Menu</button>
           </div>
         </div>
@@ -215,15 +217,15 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" /><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" /></svg>
             </button>
             <span>{prompt.text}</span>
-            {exercise.type === 'son' && <button className="btn ghost small rule-btn" onClick={() => setRule(true)}>La règle</button>}
+            {ex.type === 'son' && <button className="btn ghost small rule-btn" onClick={() => setRule(true)}>La règle</button>}
           </div>
-          {exercise.type === 'entoure' && q.kind === 'collection' && (
+          {ex.type === 'entoure' && q.kind === 'collection' && (
             <>
               <div className="hint">Dessine un rond avec ton doigt autour de la bonne collection.</div>
               <EntoureQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={s => setMsg({ kind: 'no', title: 'Presque !', sub: s })} />
             </>
           )}
-          {exercise.type === 'combien' && q.kind === 'collection' && (
+          {ex.type === 'combien' && q.kind === 'collection' && (
             <CombienQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
           )}
           {q.kind === 'calc' && (
@@ -242,12 +244,14 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
             <SuiteQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
           )}
           <div className="feedback" aria-live="polite">
-            {msg && (
-              <div className={'msg ' + msg.kind}>
-                {msg.title}
-                {msg.sub && <small>{msg.sub}</small>}
-              </div>
-            )}
+            {msg ? (
+              <Mascot
+                size="sm"
+                mood={msg.kind === 'ok' ? 'cheer' : 'think'}
+                text={<><b className={'msg ' + msg.kind}>{msg.title}</b>{msg.sub && <small>{msg.sub}</small>}</>}
+                speak={msg.kind === 'no' && msg.sub ? msg.sub : false}
+              />
+            ) : <span />}
             {phase === 'solved' && (
               <button className="btn" onClick={next} autoFocus>{idx + 1 < round.length ? 'Suivant' : 'Voir mes étoiles'}</button>
             )}
@@ -261,5 +265,5 @@ export function Runner({ exercise, childName, test, onRecord, onExit }: Props) {
 function endMessage(s: number, total: number, name?: string) {
   const n = name ? `, ${name}` : ''
   const r = s / total
-  return r >= 0.9 ? `Champion de tennis${n} !` : r >= 0.6 ? `Très bien joué${n} !` : `Bon match${n}, on rejoue ?`
+  return r >= 0.9 ? `Champion${n} !` : r >= 0.6 ? `Très bien joué${n} !` : `Bon match${n}, on rejoue ?`
 }
