@@ -16,6 +16,15 @@ export function Thumb({ ex }: { ex: Exercise }) {
       </div>
     )
   }
+  if (ex.type === 'paquets') {
+    const pos: [number, number][] = [[18, 22], [34, 16], [50, 26], [22, 44], [40, 40], [60, 46], [30, 66], [48, 62], [16, 76], [64, 72], [80, 30], [84, 62]]
+    return (
+      <div className="thumb paq-thumb" aria-hidden="true">
+        <svg viewBox="0 0 100 100"><path d="M10 30 C 8 8, 60 6, 66 30 C 74 60, 66 84, 40 82 C 12 80, 12 56, 10 30 Z" fill="none" stroke="#2D6A9F" strokeWidth="3.5" strokeLinecap="round" /></svg>
+        {pos.map(([x, y], i) => <i key={i} style={{ left: `${x}%`, top: `${y}%` }} />)}
+      </div>
+    )
+  }
   if (ex.type === 'son') {
     return (
       <div className="thumb son-thumb" aria-hidden="true">

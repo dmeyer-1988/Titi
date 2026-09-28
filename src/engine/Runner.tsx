@@ -8,6 +8,7 @@ import { TableQ } from './TableQ'
 import { AlphaQ } from './AlphaQ'
 import { SonQ, SonRule } from './SonQ'
 import { CalcQ } from './CalcQ'
+import { PaquetsQ } from './PaquetsQ'
 import { calcAnswer, opSign } from './calcul'
 import { isTrap } from './sons'
 import { LETTER_NAME } from './alphabet'
@@ -15,6 +16,7 @@ import { say, sounds } from './audio'
 import type { AlphabetConfig, Exercise, SonConfig } from './types'
 import { words } from './words'
 import { Mascot } from '../mascot/Mascot'
+import { Celebrate, Fireworks } from '../mascot/Fireworks'
 
 export interface AttemptDraft {
   exercise_id: string | null
@@ -55,6 +57,9 @@ export function Runner({ exercise, items, onFinished, childName, test, onRecord,
   // tries = erreurs sur la case en cours ; misses = erreurs sur toute la question (pour l'étoile)
   const tries = useRef(0)
   const misses = useRef(0)
+  // Série de réponses justes du premier coup d'affilée (🔥 dès 3, fête à 5 et 10)
+  const [streak, setStreak] = useState(0)
+  const [party, setParty] = useState<string | null>(null)
   const q = round[idx]?.q
   const ex = round[idx]?.ex ?? exercise
   const name = childName?.trim()
@@ -72,6 +77,8 @@ export function Runner({ exercise, items, onFinished, childName, test, onRecord,
       const text = q.blank === 'c' ? <>Calcule.</> : <>Trouve le nombre qui manque.</>
       return { text, speech: `${W('a')} ${q.op === '+' ? 'plus' : 'moins'} ${W('b')}, égale ${W('c')} ?` }
     }
+    if (q.kind === 'paquets')
+      return { text: <>Fais des paquets de 10 pour obtenir <strong>{q.target}</strong> balles.</>, speech: `Fais des paquets de 10 pour obtenir ${words(q.target)} balles. Entoure 10 balles avec ton doigt.` }
     if (q.kind === 'son') return { text: <>Complète le mot avec <strong>on</strong> ou <strong>om</strong>.</>, speech: `Complète le mot ${q.word} avec o, n, ou o, m.` }
     if (q.kind === 'alpha') {
       if (q.skill === 'suite') return { text: <>Quelle lettre manque ?</>, speech: "Quelle lettre manque dans l'alphabet ?" }
@@ -107,7 +114,9 @@ export function Runner({ exercise, items, onFinished, childName, test, onRecord,
       tries.current++
       misses.current++
       sounds.bad()
-      const hint = q.kind === 'calc'
+      const hint = q.kind === 'paquets'
+        ? (Number(given) < Number(expected) ? 'Il te manque des balles : ajoute un paquet de 10 ou des balles seules.' : 'Tu en as trop : enlève des balles.')
+        : q.kind === 'calc'
         ? (q.blank === 'a' ? "Fais le calcul à l'envers pour retrouver le premier nombre." : q.op === '+' ? 'Compte en avançant de 1 en 1 depuis le premier nombre.' : 'Compte en reculant de 1 en 1 depuis le premier nombre.')
         : q.kind === 'son'
         ? (isTrap(q.word) ? "C'est un mot piège : il ne suit pas la règle !" : 'Regarde la lettre juste après : est-ce un m, un b ou un p ?')
@@ -128,12 +137,19 @@ export function Runner({ exercise, items, onFinished, childName, test, onRecord,
     const first = misses.current === 0
     setResults(r => { const x = [...r]; x[idx] = first; return x })
     setPhase('solved')
-    const praise = (first ? PRAISE[Math.floor(Math.random() * PRAISE.length)] : 'Bien joué') + (name ? ' ' + name : '') + ' !'
+    const run = first ? streak + 1 : 0
+    setStreak(run)
+    if (run === 5 || run === 10 || run === 15) setParty(`Super série de ${run} ! Tu es en feu !`)
+    const praise = (run >= 3 ? `Tu es en feu${name ? ' ' + name : ''} ! 🔥` : (first ? PRAISE[Math.floor(Math.random() * PRAISE.length)] : 'Bien joué') + (name ? ' ' + name : '') + ' !')
     let sub = ''
     if (q.kind === 'collection') {
       const t = q.target, p = Math.floor(t / 10), u = t % 10
       sub = `${p} paquet${p > 1 ? 's' : ''} de 10${u ? ` et ${u} balle${u > 1 ? 's' : ''}` : ''} = ${t} (${words(t)})`
       say(`${words(t)} balles ! ${first ? praise : ''}`)
+    } else if (q.kind === 'paquets') {
+      const t = q.target, p = Math.floor(t / 10), u = t % 10
+      sub = `${p} paquet${p > 1 ? 's' : ''} de 10${u ? ` et ${u} balle${u > 1 ? 's' : ''}` : ''} = ${t} (${words(t)})`
+      say(`${words(t)} balles ! ${praise}`)
     } else if (q.kind === 'calc') {
       sub = `${q.a} ${opSign(q.op)} ${q.b} = ${q.c}`
       say(`${words(calcAnswer(q))} ! ${praise}`)
@@ -172,7 +188,7 @@ export function Runner({ exercise, items, onFinished, childName, test, onRecord,
   }
 
   const restart = () => {
-    setRound(build()); setIdx(0); setResults([]); setPhase('play'); setMsg(null); tries.current = 0; misses.current = 0
+    setRound(build()); setIdx(0); setResults([]); setPhase('play'); setMsg(null); setStreak(0); tries.current = 0; misses.current = 0
   }
 
   const stars = results.filter(Boolean).length
@@ -194,12 +210,15 @@ export function Runner({ exercise, items, onFinished, childName, test, onRecord,
             : <span key={i} className={'dot' + (results[i] === false ? ' done' : '') + (i === idx && phase !== 'end' ? ' now' : '')} />
         ))}
         <span className="count">{Math.min(idx + 1, round.length)} / {round.length}</span>
+        {streak >= 3 && phase !== 'end' && <span className="fire-chip" key={streak} aria-label={`Série de ${streak}`}>🔥 {streak}</span>}
       </div>
+      {party && <Celebrate text={party} onDone={() => setParty(null)} />}
 
       {rule ? (
         <SonRule onClose={() => setRule(false)} cta={idx === 0 && phase === 'play' && results.length === 0 ? "J'ai compris, on joue !" : 'Revenir au jeu'} />
       ) : phase === 'end' ? (
         <div className="end">
+          {stars / round.length >= 0.6 && <Fireworks duration={3000} bursts={7} />}
           <Mascot size="lg" mood="cheer" text={endMessage(stars, round.length, name)} />
           <div className="stars">
             {Array.from({ length: stars }, (_, i) => <span key={i} style={{ animationDelay: `${i * 0.12}s` }}><Star /></span>)}
@@ -227,6 +246,12 @@ export function Runner({ exercise, items, onFinished, childName, test, onRecord,
           )}
           {ex.type === 'combien' && q.kind === 'collection' && (
             <CombienQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
+          )}
+          {q.kind === 'paquets' && (
+            <>
+              <div className="hint">Entoure 10 balles avec ton doigt pour faire un paquet. Touche une balle pour l'ajouter seule.</div>
+              <PaquetsQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={s => setMsg({ kind: 'no', title: 'Presque !', sub: s })} />
+            </>
           )}
           {q.kind === 'calc' && (
             <CalcQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />

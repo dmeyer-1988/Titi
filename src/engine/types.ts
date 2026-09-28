@@ -1,6 +1,6 @@
 // Types partagés entre le moteur, la base et les écrans.
 
-export type ExerciseType = 'entoure' | 'combien' | 'suite' | 'table' | 'calcul' | 'alphabet' | 'son'
+export type ExerciseType = 'entoure' | 'combien' | 'paquets' | 'suite' | 'table' | 'calcul' | 'alphabet' | 'son'
 
 /** Matières affichées sur l'accueil. La matière d'un exercice découle de son type. */
 export type Subject = 'maths' | 'francais'
@@ -13,6 +13,7 @@ export const SUBJECTS: { id: Subject; label: string; tagline: string }[] = [
 export const TYPE_SUBJECT: Record<ExerciseType, Subject> = {
   entoure: 'maths',
   combien: 'maths',
+  paquets: 'maths',
   suite: 'maths',
   table: 'maths',
   calcul: 'maths',
@@ -94,7 +95,16 @@ export interface CalculConfig {
   questions: number
 }
 
-export type ExerciseConfig = CollectionConfig | SuiteConfig | TableConfig | CalculConfig | AlphabetConfig | SonConfig
+/** « Fais des paquets de 10 » : entourer 10 balles au doigt, puis ajouter des balles seules. */
+export interface PaquetsConfig {
+  min: number
+  max: number
+  /** true = plus de balles que nécessaire : il faut s'arrêter au bon nombre */
+  extra: boolean
+  questions: number
+}
+
+export type ExerciseConfig = PaquetsConfig | CollectionConfig | SuiteConfig | TableConfig | CalculConfig | AlphabetConfig | SonConfig
 
 export interface Exercise {
   id: string
@@ -128,6 +138,7 @@ export interface Attempt {
 export const TYPE_LABEL: Record<ExerciseType, string> = {
   entoure: 'Entoure',
   combien: 'Combien ?',
+  paquets: 'Paquets de 10',
   suite: 'Complète la suite',
   table: "Tableau d'addition",
   calcul: 'Calcul',
@@ -138,6 +149,7 @@ export const TYPE_LABEL: Record<ExerciseType, string> = {
 export const TYPE_HELP: Record<ExerciseType, string> = {
   entoure: "L'enfant dessine un rond autour de la collection qui a le bon nombre de balles.",
   combien: "L'enfant compte une collection (paquets de 10 et balles seules) et choisit le bon nombre.",
+  paquets: "Des balles en vrac : l'enfant entoure au doigt des paquets de 10, puis touche des balles seules pour obtenir le nombre demandé (ex. 34 = 3 paquets et 4 balles).",
   suite: "L'enfant complète les cases vides d'une suite de nombres avec un clavier.",
   table: "L'enfant complète les cases vides d'un tableau d'addition. En mode mixte, il retrouve aussi des nombres des en-têtes à partir d'une somme.",
   calcul: "Additions et soustractions du type 34 + 3 ou 47 − 5. Choisissez les nombres à ajouter ou enlever (+0 à +10), la taille du grand nombre, et si l'enfant cherche le résultat ou le nombre manquant (34 + ? = 37).",
@@ -148,6 +160,7 @@ export const TYPE_HELP: Record<ExerciseType, string> = {
 export function defaultConfig(type: ExerciseType): ExerciseConfig {
   if (type === 'suite') return { min: 10, max: 100, step: 10, length: 6, blanks: 1, direction: 'up', questions: 10 }
   if (type === 'table') return { min: 2, max: 9, size: 4, mode: 'sommes', questions: 2 }
+  if (type === 'paquets') return { min: 11, max: 49, extra: true, questions: 5 }
   if (type === 'calcul') return { op: '+', steps: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], digits: 2, find: 'resultat', questions: 10 }
   if (type === 'son') return { focus: ['ombre', 'tomber', 'prénom', 'nom', 'ballon', 'pompon', 'bonbon'], extra: true, showRule: true, questions: 12 }
   if (type === 'alphabet') return { skills: ['suite', 'position', 'voyelles', 'ranger'], words: 3, capitals: false, questions: 12 }
@@ -167,6 +180,11 @@ export const CALCUL_SEED: Omit<Exercise, 'id'>[] = [
   { type: 'calcul', title: 'Le nombre manquant', config: { op: 'mix', steps: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], digits: 2, find: 'manquant', questions: 10 }, active: true, position: 2 },
 ]
 
+export const PAQUETS_SEED: Omit<Exercise, 'id'>[] = [
+  { type: 'paquets', title: 'Fais des paquets de 10', config: { min: 11, max: 49, extra: true, questions: 5 }, active: true, position: 0 },
+  { type: 'paquets', title: 'Compte avec des paquets', config: { min: 11, max: 39, extra: false, questions: 4 }, active: true, position: 1 },
+]
+
 export const SON_SEED: Omit<Exercise, 'id'>[] = [
   { type: 'son', title: 'Le son on / om', config: { focus: ['ombre', 'tomber', 'prénom', 'nom', 'ballon', 'pompon', 'bonbon'], extra: true, showRule: true, questions: 12 }, active: true, position: 0 },
   { type: 'son', title: 'Mes 7 mots on / om', config: { focus: ['ombre', 'tomber', 'prénom', 'nom', 'ballon', 'pompon', 'bonbon'], extra: false, showRule: false, questions: 7 }, active: true, position: 1 },
@@ -181,4 +199,5 @@ export const SEED_EXERCISES: Omit<Exercise, 'id'>[] = [
   ...ALPHABET_SEED.map((e, i) => ({ ...e, position: 5 + i })),
   ...SON_SEED.map((e, i) => ({ ...e, position: 9 + i })),
   ...CALCUL_SEED.map((e, i) => ({ ...e, position: 11 + i })),
+  ...PAQUETS_SEED.map((e, i) => ({ ...e, position: 14 + i })),
 ]

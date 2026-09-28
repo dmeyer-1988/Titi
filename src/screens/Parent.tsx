@@ -131,6 +131,7 @@ function describe(ex: Exercise) {
     const L: Record<string, string> = { suite: 'lettre qui manque', position: 'avant/après/entre', voyelles: 'voyelles', ranger: 'ranger des mots' }
     return a.skills.map(k => L[k]).join(', ') + (a.capitals ? ', majuscules' : '')
   }
+  if (ex.type === 'paquets') return `nombres ${c.min}–${c.max}, ${c.extra ? 'balles en trop' : 'juste le bon nombre'}`
   if (ex.type === 'table') return `${c.size} × ${c.size}, nombres ${c.min}–${c.max}, ${c.mode === 'mixte' ? 'avec en-têtes à trouver' : 'sommes à trouver'}`
   if (ex.type === 'suite') return `de ${c.step} en ${c.step}, ${c.min}–${c.max}, ${c.blanks} case${Number(c.blanks) > 1 ? 's' : ''} vide${Number(c.blanks) > 1 ? 's' : ''}`
   return `${c.onlyTens ? 'dizaines' : 'dizaines + unités'}, ${c.min}–${c.max}`

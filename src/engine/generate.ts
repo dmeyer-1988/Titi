@@ -1,6 +1,7 @@
-import type { AlphabetConfig, CalculConfig, CollectionConfig, Exercise, SonConfig, SuiteConfig, TableConfig } from './types'
+import type { PaquetsConfig, AlphabetConfig, CalculConfig, CollectionConfig, Exercise, SonConfig, SuiteConfig, TableConfig } from './types'
 import { hasSon, SON_BANK } from './sons'
 import { calcQuestion, type CalcQuestion } from './calcul'
+import { paquetsQuestion, type PaquetsQuestion } from './paquets'
 import { alphaKey, alphaQuestion, alphaSkills, type AlphaQuestion } from './alphabet'
 
 export interface CollectionQuestion {
@@ -29,7 +30,7 @@ export interface SonQuestion {
   kind: 'son'
   word: string
 }
-export type Question = CollectionQuestion | SuiteQuestion | TableQuestion | AlphaQuestion | SonQuestion | CalcQuestion
+export type Question = CollectionQuestion | SuiteQuestion | TableQuestion | AlphaQuestion | SonQuestion | CalcQuestion | PaquetsQuestion
 
 export const cellKey = (r: number, c: number) => `${r},${c}`
 export function cellValue(q: TableQuestion, r: number, c: number): number {
@@ -151,7 +152,7 @@ function sonRound(c: SonConfig): SonQuestion[] {
 
 export function makeRound(ex: Exercise): Question[] {
   if (ex.type === 'son') return sonRound(ex.config as SonConfig)
-  const n = clamp((ex.config as { questions?: number }).questions ?? 10, ex.type === 'table' ? 1 : 3, 20)
+  const n = clamp((ex.config as { questions?: number }).questions ?? 10, ex.type === 'table' || ex.type === 'paquets' ? 1 : 3, 20)
   const out: Question[] = []
   const seen = new Set<string>()
   // Alphabet : les parties choisies tournent (suite, position, voyelles, ranger…), dans un ordre mélangé.
@@ -165,6 +166,7 @@ export function makeRound(ex: Exercise): Question[] {
       if (ex.type === 'suite') q = suiteQuestion(ex.config as SuiteConfig)
       else if (ex.type === 'table') q = tableQuestion(ex.config as TableConfig)
       else if (ex.type === 'calcul') q = calcQuestion(ex.config as CalculConfig)
+      else if (ex.type === 'paquets') q = paquetsQuestion(ex.config as PaquetsConfig)
       else if (ex.type === 'alphabet') q = alphaQuestion(skillOrder[i], ex.config as AlphabetConfig)
       else {
         const cfg = ex.config as CollectionConfig
@@ -183,6 +185,7 @@ function key(q: Question) {
   if (q.kind === 'alpha') return alphaKey(q)
   if (q.kind === 'son') return 'o' + q.word
   if (q.kind === 'calc') return 'k' + q.a + q.op + q.b + q.blank
+  if (q.kind === 'paquets') return 'p' + q.target
   if (q.kind === 'table') return 't' + q.rows.join(',') + '|' + q.cols.join(',')
   return 's' + q.seq.join(',') + '|' + q.blanks.join(',')
 }
