@@ -11,6 +11,7 @@ import { CalcQ } from './CalcQ'
 import { PaquetsQ } from './PaquetsQ'
 import { NoeudsQ } from './NoeudsQ'
 import { ChateauxQ } from './ChateauxQ'
+import { MystereQ } from './MystereQ'
 import { CapaciteQ } from './CapaciteQ'
 import { moveText, nodeName } from './noeuds'
 import { ruleText } from './chateaux'
@@ -91,6 +92,8 @@ export function Runner({ exercise, items, onFinished, childName, test, onRecord,
       const m = moveText(q.move!)
       return { text: <>{cap1(T)} {q.thing.emoji} part du nœud <strong>{nodeName(q.at)}</strong> et avance de {m}. Touche le nœud d'arrivée.</>, speech: `${cap1(T)} part du nœud ${nodeName(q.at).split('').join(' ')} et avance de ${m}. Touche le nœud d'arrivée.` }
     }
+    if (q.kind === 'mystere')
+      return { text: <>Trouve le <strong>château mystère</strong> ! Change un seul critère à la fois.</>, speech: "Trouve le château mystère ! Après chaque essai, je te dis combien de critères sont corrects. Change un seul critère à la fois." }
     if (q.kind === 'chateaux')
       return { text: <>Construis le château : {q.towers} tours qui respectent les 2 conditions.</>, speech: `Construis un château de ${words(q.total)} cubes. ${ruleText(q)} Essaie, vérifie, puis ajuste.` }
     if (q.kind === 'capacite')
@@ -191,6 +194,9 @@ export function Runner({ exercise, items, onFinished, childName, test, onRecord,
     } else if (q.kind === 'noeuds') {
       sub = q.skill === 'bouger' ? `${cap1(q.thing.name)} arrive sur le nœud ${nodeName(q.answer)}.` : `${cap1(q.thing.name)} est sur le nœud ${nodeName(q.answer)} : colonne ${nodeName(q.answer)[0]}, ligne ${nodeName(q.answer).slice(1)}.`
       say(`${nodeName(q.answer).split('').join(' ')}. ${praise}`)
+    } else if (q.kind === 'mystere') {
+      sub = 'Tu as trouvé le château mystère en ajustant un critère à la fois !'
+      say(`${praise} Tu as trouvé le château mystère !`)
     } else if (q.kind === 'chateaux') {
       sub = `${q.answer.join(' + ')} = ${q.total} cubes. Tu as bien ajusté tes essais !`
       say(praise)
@@ -300,6 +306,9 @@ export function Runner({ exercise, items, onFinished, childName, test, onRecord,
           )}
           {q.kind === 'noeuds' && (
             <NoeudsQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
+          )}
+          {q.kind === 'mystere' && (
+            <MystereQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={s => setMsg({ kind: 'no', title: 'Ton essai', sub: s })} />
           )}
           {q.kind === 'chateaux' && (
             <ChateauxQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={s => setMsg({ kind: 'no', title: 'Ajuste !', sub: s })} />

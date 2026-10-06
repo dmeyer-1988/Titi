@@ -1,9 +1,10 @@
-import type { NoeudsConfig, ChateauxConfig, CapaciteConfig, PaquetsConfig, AlphabetConfig, CalculConfig, CollectionConfig, Exercise, SonConfig, SuiteConfig, TableConfig } from './types'
+import type { MystereConfig, NoeudsConfig, ChateauxConfig, CapaciteConfig, PaquetsConfig, AlphabetConfig, CalculConfig, CollectionConfig, Exercise, SonConfig, SuiteConfig, TableConfig } from './types'
 import { hasSon, SON_BANK } from './sons'
 import { calcQuestion, type CalcQuestion } from './calcul'
 import { paquetsQuestion, type PaquetsQuestion } from './paquets'
 import { noeudsQuestion, noeudsSkills, nodeName, type NoeudsQuestion } from './noeuds'
 import { chateauxQuestion, type ChateauxQuestion } from './chateaux'
+import { mystereQuestion, castleKey, type MystereQuestion } from './mystere'
 import { capaciteQuestion, type CapaciteQuestion } from './capacite'
 import { alphaKey, alphaQuestion, alphaSkills, type AlphaQuestion } from './alphabet'
 
@@ -35,7 +36,7 @@ export interface SonQuestion {
   kind: 'son'
   word: string
 }
-export type Question = NoeudsQuestion | ChateauxQuestion | CapaciteQuestion | CollectionQuestion | SuiteQuestion | TableQuestion | AlphaQuestion | SonQuestion | CalcQuestion | PaquetsQuestion
+export type Question = MystereQuestion | NoeudsQuestion | ChateauxQuestion | CapaciteQuestion | CollectionQuestion | SuiteQuestion | TableQuestion | AlphaQuestion | SonQuestion | CalcQuestion | PaquetsQuestion
 
 export const cellKey = (r: number, c: number) => `${r},${c}`
 export function cellValue(q: TableQuestion, r: number, c: number): number {
@@ -167,7 +168,7 @@ function sonRound(c: SonConfig): SonQuestion[] {
 
 export function makeRound(ex: Exercise): Question[] {
   if (ex.type === 'son') return sonRound(ex.config as SonConfig)
-  const n = clamp((ex.config as { questions?: number }).questions ?? 10, ex.type === 'table' || ex.type === 'paquets' || ex.type === 'chateaux' || ex.type === 'capacite' ? 1 : 3, 20)
+  const n = clamp((ex.config as { questions?: number }).questions ?? 10, ex.type === 'table' || ex.type === 'paquets' || ex.type === 'chateaux' || ex.type === 'mystere' || ex.type === 'capacite' ? 1 : 3, 20)
   const out: Question[] = []
   const seen = new Set<string>()
   // Alphabet : les parties choisies tournent (suite, position, voyelles, ranger…), dans un ordre mélangé.
@@ -187,6 +188,7 @@ export function makeRound(ex: Exercise): Question[] {
       else if (ex.type === 'paquets') q = paquetsQuestion(ex.config as PaquetsConfig)
       else if (ex.type === 'noeuds') q = noeudsQuestion(nodeOrder[i], ex.config as NoeudsConfig)
       else if (ex.type === 'chateaux') q = chateauxQuestion(ex.config as ChateauxConfig)
+      else if (ex.type === 'mystere') q = mystereQuestion(ex.config as MystereConfig)
       else if (ex.type === 'capacite') q = capaciteQuestion(ex.config as CapaciteConfig)
       else if (ex.type === 'alphabet') q = alphaQuestion(skillOrder[i], ex.config as AlphabetConfig)
       else {
@@ -209,6 +211,7 @@ function key(q: Question) {
   if (q.kind === 'paquets') return 'p' + q.target
   if (q.kind === 'noeuds') return 'n' + q.skill + nodeName(q.at) + nodeName(q.answer)
   if (q.kind === 'chateaux') return 'h' + q.answer.join(',') + q.rule
+  if (q.kind === 'mystere') return 'm' + castleKey(q.secret)
   if (q.kind === 'capacite') return 'v' + Math.random()
   if (q.kind === 'table') return 't' + q.rows.join(',') + '|' + q.cols.join(',')
   return 's' + q.seq.join(',') + '|' + q.blanks.join(',')

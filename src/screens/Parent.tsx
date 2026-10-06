@@ -123,6 +123,7 @@ function describe(ex: Exercise) {
     return `quadrillage ${k.size} × ${k.size}, ${k.skills.map(x => L[x]).join(', ')}${rev}`
   }
   if (ex.type === 'chateaux') return `${c.towers} tours, jusqu'à ${c.maxTotal} cubes${rev}`
+  if (ex.type === 'mystere') return `${c.aide ? 'avec' : 'sans'} aide, ${c.strict ? 'un critère à la fois' : 'changements libres'}${rev}`
   if (ex.type === 'capacite') return `${c.compare === 'verser' ? "l'enfant verse" : c.compare === 'lire' ? 'résultat montré' : 'verser ou lire le résultat'}${rev}`
   if (ex.type === 'calcul' && c.astuces) return `amis de 10, doubles, +9, ±10, dizaines${rev}`
   if (ex.type === 'suite' && c.oral) return `consigne orale, de 1 en 1, ${c.min}–${c.max}${rev}`

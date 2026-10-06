@@ -1,4 +1,5 @@
 import { Pack } from '../engine/Balls'
+import { CastleArt } from '../engine/MystereQ'
 import type { Child, Exercise, Subject } from '../engine/types'
 import { SUBJECTS, TYPE_LABEL, TYPE_SUBJECT } from '../engine/types'
 import { Mascot } from '../mascot/Mascot'
@@ -29,6 +30,9 @@ export function Thumb({ ex }: { ex: Exercise }) {
         </svg>
       </div>
     )
+  }
+  if (ex.type === 'mystere') {
+    return <div className="thumb myst-thumb" aria-hidden="true"><CastleArt c={[1, 0, 1, 0]} /><span className="q">?</span></div>
   }
   if (ex.type === 'chateaux') {
     return (

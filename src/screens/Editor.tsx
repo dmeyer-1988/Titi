@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Runner } from '../engine/Runner'
-import { defaultConfig, TYPE_HELP, TYPE_LABEL, type AlphabetConfig, type AlphaSkill, type SonConfig, type CalculConfig, type PaquetsConfig, type NoeudsConfig, type NoeudSkill, type ChateauxConfig, type CapaciteConfig, type CollectionConfig, type Exercise, type ExerciseType, type SuiteConfig, type TableConfig, SKILL_LABEL, TYPE_SUBJECT, SUBJECTS } from '../engine/types'
+import { defaultConfig, TYPE_HELP, TYPE_LABEL, type AlphabetConfig, type AlphaSkill, type SonConfig, type CalculConfig, type PaquetsConfig, type NoeudsConfig, type NoeudSkill, type ChateauxConfig, type MystereConfig, type CapaciteConfig, type CollectionConfig, type Exercise, type ExerciseType, type SuiteConfig, type TableConfig, SKILL_LABEL, TYPE_SUBJECT, SUBJECTS } from '../engine/types'
 import { saveExercise } from '../lib/store'
 import { hasSon, isTrap } from '../engine/sons'
 import { calcTitle } from '../engine/calcul'
@@ -36,7 +36,7 @@ function Chips<T extends string | number>({ label, value, options, onChange }: {
   )
 }
 
-type AnyConfig = NoeudsConfig | ChateauxConfig | CapaciteConfig | PaquetsConfig | CollectionConfig | SuiteConfig | TableConfig | AlphabetConfig | SonConfig | CalculConfig
+type AnyConfig = MystereConfig | NoeudsConfig | ChateauxConfig | CapaciteConfig | PaquetsConfig | CollectionConfig | SuiteConfig | TableConfig | AlphabetConfig | SonConfig | CalculConfig
 const family = (t: ExerciseType) => (t === 'entoure' || t === 'combien' ? 'collection' : t)
 
 function autoTitle(type: ExerciseType, c: AnyConfig) {
@@ -44,6 +44,7 @@ function autoTitle(type: ExerciseType, c: AnyConfig) {
   if (type === 'noeuds') return 'Les nœuds'
   if (type === 'chateaux') return (c as ChateauxConfig).towers === 3 ? 'Les châteaux à 3 tours' : 'Les châteaux'
   if (type === 'capacite') return 'Qui contient le plus ?'
+  if (type === 'mystere') return 'Le château mystère'
   if (type === 'paquets') return (c as PaquetsConfig).extra ? 'Fais des paquets de 10' : 'Compte avec des paquets'
   if (type === 'son') return (c as SonConfig).extra ? 'Le son on / om' : 'Mes mots on / om'
   if (type === 'alphabet') {
@@ -94,8 +95,8 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
 
   if (testing) return <Runner exercise={draft} test onExit={() => setTesting(false)} />
 
-  const c = config as NoeudsConfig & ChateauxConfig & CapaciteConfig & PaquetsConfig & CollectionConfig & SuiteConfig & TableConfig & AlphabetConfig & SonConfig & CalculConfig
-  const invalid = type === 'son' ? !c.focus.some(hasSon) && !c.extra : type === 'calcul' ? !c.astuces && c.steps.length === 0 : type === 'noeuds' ? !c.skills?.length : type === 'chateaux' || type === 'capacite' ? false : type !== 'alphabet' && c.min >= c.max
+  const c = config as MystereConfig & NoeudsConfig & ChateauxConfig & CapaciteConfig & PaquetsConfig & CollectionConfig & SuiteConfig & TableConfig & AlphabetConfig & SonConfig & CalculConfig
+  const invalid = type === 'son' ? !c.focus.some(hasSon) && !c.extra : type === 'calcul' ? !c.astuces && c.steps.length === 0 : type === 'noeuds' ? !c.skills?.length : type === 'chateaux' || type === 'capacite' || type === 'mystere' ? false : type !== 'alphabet' && c.min >= c.max
 
   return (
     <div className="editor">
@@ -108,7 +109,7 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
         <div key={sub.id}>
           <div className="types-label">{sub.label}</div>
           <div className="types">
-            {(['entoure', 'combien', 'paquets', 'suite', 'table', 'calcul', 'noeuds', 'chateaux', 'capacite', 'alphabet', 'son'] as ExerciseType[]).filter(t => TYPE_SUBJECT[t] === sub.id).map(t => (
+            {(['entoure', 'combien', 'paquets', 'suite', 'table', 'calcul', 'noeuds', 'mystere', 'chateaux', 'capacite', 'alphabet', 'son'] as ExerciseType[]).filter(t => TYPE_SUBJECT[t] === sub.id).map(t => (
               <button key={t} className={'type-card' + (t === type ? ' on' : '')} onClick={() => changeType(t)} aria-pressed={t === type}>
                 <Thumb ex={{ ...draft, type: t, config: family(t) === family(type) ? config : defaultConfig(t) }} />
                 <b>{TYPE_LABEL[t]}</b>
@@ -141,6 +142,13 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
             <Chips label="Tours" value={c.towers} onChange={v => upd({ towers: v })}
               options={[{ v: 2, l: '2 tours' }, { v: 3, l: '3 tours (plus dur)' }]} />
             <Stepper id="maxTotal" label="Cubes en tout, au maximum" value={c.maxTotal} min={8} max={40} onChange={n => upd({ maxTotal: n })} />
+          </>
+        ) : type === 'mystere' ? (
+          <>
+            <Chips label="Aide de la loutre" value={c.aide ? 1 : 0} onChange={v => upd({ aide: v === 1 })}
+              options={[{ v: 1, l: 'Explique le score (monte, baisse, pareil)' }, { v: 0, l: 'Donne seulement le score' }]} />
+            <Chips label="Un seul critère à la fois" value={c.strict ? 1 : 0} onChange={v => upd({ strict: v === 1 })}
+              options={[{ v: 1, l: 'Obligatoire' }, { v: 0, l: 'Libre' }]} />
           </>
         ) : type === 'capacite' ? (
           <Chips label="Comparaison" value={c.compare} onChange={v => upd({ compare: v })}
@@ -252,8 +260,8 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
             {!c.oral && <Stepper id="blanks" label="Cases vides" value={c.blanks} min={1} max={Math.max(1, c.length - 2)} onChange={n => upd({ blanks: n })} />}
           </>
         )}
-        {type === 'paquets' || type === 'chateaux' || type === 'capacite'
-          ? <Stepper id="q" label={type === 'paquets' ? 'Nombres par partie' : 'Questions par partie'} value={c.questions} min={1} max={10} onChange={n => upd({ questions: n })} hint={type === 'chateaux' ? 'Un château ≈ 2 minutes' : '5 questions ≈ 4 minutes'} />
+        {type === 'paquets' || type === 'chateaux' || type === 'capacite' || type === 'mystere'
+          ? <Stepper id="q" label={type === 'paquets' ? 'Nombres par partie' : 'Questions par partie'} value={c.questions} min={1} max={10} onChange={n => upd({ questions: n })} hint={type === 'chateaux' || type === 'mystere' ? 'Un château ≈ 2 minutes' : '5 questions ≈ 4 minutes'} />
           : type === 'table'
           ? <Stepper id="q" label="Tableaux par partie" value={c.questions} min={1} max={6} onChange={n => upd({ questions: n })} hint="Un tableau 4 × 4 ≈ 3 minutes" />
           : <Stepper id="q" label="Questions par partie" value={c.questions} min={3} max={20} onChange={n => upd({ questions: n })} hint="10 questions ≈ 5 minutes" />}

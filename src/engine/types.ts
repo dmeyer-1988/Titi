@@ -1,6 +1,6 @@
 // Types partagés entre le moteur, la base et les écrans.
 
-export type ExerciseType = 'entoure' | 'combien' | 'paquets' | 'suite' | 'table' | 'calcul' | 'noeuds' | 'chateaux' | 'capacite' | 'alphabet' | 'son'
+export type ExerciseType = 'entoure' | 'combien' | 'paquets' | 'suite' | 'table' | 'calcul' | 'noeuds' | 'chateaux' | 'mystere' | 'capacite' | 'alphabet' | 'son'
 
 /** Matières affichées sur l'accueil. La matière d'un exercice découle de son type. */
 export type Subject = 'maths' | 'francais'
@@ -19,6 +19,7 @@ export const TYPE_SUBJECT: Record<ExerciseType, Subject> = {
   calcul: 'maths',
   noeuds: 'maths',
   chateaux: 'maths',
+  mystere: 'maths',
   capacite: 'maths',
   alphabet: 'francais',
   son: 'francais',
@@ -125,6 +126,16 @@ export interface ChateauxConfig {
   questions: number
 }
 
+/** Le château mystère : 36 cartes, l'enfant ajuste un critère à la fois. */
+export interface MystereConfig {
+  /** la loutre explique ce que veut dire le score (monte, baisse, pareil) */
+  aide: boolean
+  /** refuser les essais où plus d'un critère change */
+  strict: boolean
+  revision?: boolean
+  questions: number
+}
+
 /** Comparer deux récipients en versant l'un dans l'autre. */
 export interface CapaciteConfig {
   /** 'verser' = l'enfant verse lui-même ; 'lire' = on montre le résultat ; 'mix' */
@@ -142,7 +153,7 @@ export interface PaquetsConfig {
   questions: number
 }
 
-export type ExerciseConfig = NoeudsConfig | ChateauxConfig | CapaciteConfig | PaquetsConfig | CollectionConfig | SuiteConfig | TableConfig | CalculConfig | AlphabetConfig | SonConfig
+export type ExerciseConfig = NoeudsConfig | ChateauxConfig | MystereConfig | CapaciteConfig | PaquetsConfig | CollectionConfig | SuiteConfig | TableConfig | CalculConfig | AlphabetConfig | SonConfig
 
 export interface Exercise {
   id: string
@@ -181,7 +192,8 @@ export const TYPE_LABEL: Record<ExerciseType, string> = {
   table: "Tableau d'addition",
   calcul: 'Calcul',
   noeuds: 'Les nœuds',
-  chateaux: 'Les châteaux',
+  chateaux: 'Tours de cubes',
+  mystere: 'Le château mystère',
   capacite: 'Qui contient le plus ?',
   alphabet: "L'alphabet",
   son: 'Le son on / om',
@@ -196,6 +208,7 @@ export const TYPE_HELP: Record<ExerciseType, string> = {
   calcul: "Additions et soustractions du type 34 + 3 ou 47 − 5. Choisissez les nombres à ajouter ou enlever (+0 à +10), la taille du grand nombre, et si l'enfant cherche le résultat ou le nombre manquant (34 + ? = 37).",
   noeuds: "Un quadrillage avec des colonnes (A, B, C…) et des lignes (1, 2, 3…). L'enfant lit sur quel nœud se trouve un objet, place un objet sur un nœud, ou le déplace (« 2 nœuds à droite »).",
   chateaux: "Stratégie « ajustements d'essais successifs » : l'enfant construit des tours de cubes qui respectent deux conditions (ex. 15 cubes en tout, la tour de droite a 3 cubes de plus). Il essaie, vérifie, puis ajuste.",
+  mystere: "Jeu des 36 cartes château (3 couleurs × 3 tours × 2 portes × 2 drapeaux). L'enfant propose un château, on lui dit combien de critères sont corrects sans dire lesquels, et il ajuste un seul critère à la fois jusqu'à trouver le château mystère (ajustements d'essais successifs).",
   capacite: "Comparaison directe : on remplit un récipient et on le verse dans l'autre. S'il déborde, le premier contient plus ; s'il n'est pas plein, il contient moins. Les récipients ont des formes trompeuses (haut et fin, bas et large).",
   alphabet: "Lettre qui manque dans l'alphabet, lettre avant / après / entre, trouver les voyelles, ranger des mots selon l'ordre alphabétique (1re lettre). Les questions sont tirées au hasard parmi les parties choisies.",
   son: "La règle (m devant m, b, p) s'affiche au début, puis l'enfant choisit « on » ou « om » pour compléter chaque mot. Les mots à travailler reviennent à chaque partie ; les mots pièges (bonbon, nom, prénom…) sont repérés automatiquement.",
@@ -206,6 +219,7 @@ export function defaultConfig(type: ExerciseType): ExerciseConfig {
   if (type === 'table') return { min: 2, max: 9, size: 4, mode: 'sommes', questions: 2 }
   if (type === 'noeuds') return { size: 5, skills: ['lire', 'placer', 'bouger'], questions: 8 }
   if (type === 'chateaux') return { towers: 2, maxTotal: 20, questions: 5 }
+  if (type === 'mystere') return { aide: true, strict: true, questions: 3 }
   if (type === 'capacite') return { compare: 'mix', questions: 6 }
   if (type === 'paquets') return { min: 11, max: 49, extra: true, questions: 5 }
   if (type === 'calcul') return { op: '+', steps: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], digits: 2, find: 'resultat', questions: 10 }
@@ -237,9 +251,10 @@ export const TEST_SEED: Omit<Exercise, 'id'>[] = [
   { type: 'noeuds', title: 'Les nœuds', config: { size: 5, skills: ['lire', 'placer', 'bouger'], revision: true, questions: 8 }, active: true, position: 0 },
   { type: 'suite', title: 'La suite jusqu’à 100', config: { min: 0, max: 100, step: 1, length: 6, blanks: 2, direction: 'both', revision: true, questions: 8 }, active: true, position: 1 },
   { type: 'suite', title: 'Compter de 1 en 1 (à l’oral)', config: { min: 0, max: 100, step: 1, length: 6, blanks: 6, direction: 'up', oral: true, revision: true, questions: 6 }, active: true, position: 2 },
-  { type: 'chateaux', title: 'Les châteaux', config: { towers: 2, maxTotal: 20, revision: true, questions: 5 }, active: true, position: 3 },
+  { type: 'mystere', title: 'Le château mystère', config: { aide: true, strict: true, revision: true, questions: 3 }, active: true, position: 3 },
   { type: 'calcul', title: 'Calculer efficacement', config: { op: '+', steps: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], digits: 2, find: 'resultat', astuces: true, revision: true, questions: 10 }, active: true, position: 4 },
   { type: 'capacite', title: 'Qui contient le plus ?', config: { compare: 'mix', revision: true, questions: 6 }, active: true, position: 5 },
+  { type: 'chateaux', title: 'Les tours de cubes', config: { towers: 2, maxTotal: 20, questions: 5 }, active: true, position: 6 },
 ]
 
 export const SON_SEED: Omit<Exercise, 'id'>[] = [
