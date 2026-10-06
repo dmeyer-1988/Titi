@@ -116,6 +116,16 @@ function ExerciseList({ exercises, onChanged, onEdit }: Props & { onEdit: (e: Ex
 
 function describe(ex: Exercise) {
   const c = ex.config as unknown as Record<string, number | boolean | string>
+  const rev = c.revision ? ' · révision' : ''
+  if (ex.type === 'noeuds') {
+    const k = ex.config as unknown as { size: number; skills: string[] }
+    const L: Record<string, string> = { lire: 'lire', placer: 'placer', bouger: 'déplacer' }
+    return `quadrillage ${k.size} × ${k.size}, ${k.skills.map(x => L[x]).join(', ')}${rev}`
+  }
+  if (ex.type === 'chateaux') return `${c.towers} tours, jusqu'à ${c.maxTotal} cubes${rev}`
+  if (ex.type === 'capacite') return `${c.compare === 'verser' ? "l'enfant verse" : c.compare === 'lire' ? 'résultat montré' : 'verser ou lire le résultat'}${rev}`
+  if (ex.type === 'calcul' && c.astuces) return `amis de 10, doubles, +9, ±10, dizaines${rev}`
+  if (ex.type === 'suite' && c.oral) return `consigne orale, de 1 en 1, ${c.min}–${c.max}${rev}`
   if (ex.type === 'calcul') {
     const k = ex.config as unknown as { op: string; steps: number[]; digits: number; find: string }
     const ops = k.op === '+' ? 'additions' : k.op === '-' ? 'soustractions' : 'additions et soustractions'

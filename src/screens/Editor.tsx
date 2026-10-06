@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Runner } from '../engine/Runner'
-import { defaultConfig, TYPE_HELP, TYPE_LABEL, type AlphabetConfig, type AlphaSkill, type SonConfig, type CalculConfig, type PaquetsConfig, type CollectionConfig, type Exercise, type ExerciseType, type SuiteConfig, type TableConfig, SKILL_LABEL, TYPE_SUBJECT, SUBJECTS } from '../engine/types'
+import { defaultConfig, TYPE_HELP, TYPE_LABEL, type AlphabetConfig, type AlphaSkill, type SonConfig, type CalculConfig, type PaquetsConfig, type NoeudsConfig, type NoeudSkill, type ChateauxConfig, type CapaciteConfig, type CollectionConfig, type Exercise, type ExerciseType, type SuiteConfig, type TableConfig, SKILL_LABEL, TYPE_SUBJECT, SUBJECTS } from '../engine/types'
 import { saveExercise } from '../lib/store'
 import { hasSon, isTrap } from '../engine/sons'
 import { calcTitle } from '../engine/calcul'
@@ -36,11 +36,14 @@ function Chips<T extends string | number>({ label, value, options, onChange }: {
   )
 }
 
-type AnyConfig = PaquetsConfig | CollectionConfig | SuiteConfig | TableConfig | AlphabetConfig | SonConfig | CalculConfig
+type AnyConfig = NoeudsConfig | ChateauxConfig | CapaciteConfig | PaquetsConfig | CollectionConfig | SuiteConfig | TableConfig | AlphabetConfig | SonConfig | CalculConfig
 const family = (t: ExerciseType) => (t === 'entoure' || t === 'combien' ? 'collection' : t)
 
 function autoTitle(type: ExerciseType, c: AnyConfig) {
   if (type === 'calcul') return calcTitle(c as CalculConfig)
+  if (type === 'noeuds') return 'Les nœuds'
+  if (type === 'chateaux') return (c as ChateauxConfig).towers === 3 ? 'Les châteaux à 3 tours' : 'Les châteaux'
+  if (type === 'capacite') return 'Qui contient le plus ?'
   if (type === 'paquets') return (c as PaquetsConfig).extra ? 'Fais des paquets de 10' : 'Compte avec des paquets'
   if (type === 'son') return (c as SonConfig).extra ? 'Le son on / om' : 'Mes mots on / om'
   if (type === 'alphabet') {
@@ -53,6 +56,7 @@ function autoTitle(type: ExerciseType, c: AnyConfig) {
   }
   if (type === 'suite') {
     const s = c as SuiteConfig
+    if (s.oral) return 'Compter de 1 en 1 (à l’oral)'
     return `De ${s.step} en ${s.step}` + (s.direction === 'down' ? ' (à rebours)' : '')
   }
   const k = c as CollectionConfig
@@ -79,7 +83,7 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
     setType(t)
     if (family(t) !== family(type)) setConfig(defaultConfig(t))
   }
-  const upd = (patch: Partial<PaquetsConfig & CollectionConfig & SuiteConfig & TableConfig & AlphabetConfig & SonConfig & CalculConfig>) => setConfig(c => ({ ...c, ...patch }) as AnyConfig)
+  const upd = (patch: object) => setConfig(c => ({ ...c, ...patch }) as AnyConfig)
 
   const save = async () => {
     setBusy(true); setErr('')
@@ -90,8 +94,8 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
 
   if (testing) return <Runner exercise={draft} test onExit={() => setTesting(false)} />
 
-  const c = config as PaquetsConfig & CollectionConfig & SuiteConfig & TableConfig & AlphabetConfig & SonConfig & CalculConfig
-  const invalid = type === 'son' ? !c.focus.some(hasSon) && !c.extra : type === 'calcul' ? c.steps.length === 0 : type !== 'alphabet' && c.min >= c.max
+  const c = config as NoeudsConfig & ChateauxConfig & CapaciteConfig & PaquetsConfig & CollectionConfig & SuiteConfig & TableConfig & AlphabetConfig & SonConfig & CalculConfig
+  const invalid = type === 'son' ? !c.focus.some(hasSon) && !c.extra : type === 'calcul' ? !c.astuces && c.steps.length === 0 : type === 'noeuds' ? !c.skills?.length : type === 'chateaux' || type === 'capacite' ? false : type !== 'alphabet' && c.min >= c.max
 
   return (
     <div className="editor">
@@ -104,7 +108,7 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
         <div key={sub.id}>
           <div className="types-label">{sub.label}</div>
           <div className="types">
-            {(['entoure', 'combien', 'paquets', 'suite', 'table', 'calcul', 'alphabet', 'son'] as ExerciseType[]).filter(t => TYPE_SUBJECT[t] === sub.id).map(t => (
+            {(['entoure', 'combien', 'paquets', 'suite', 'table', 'calcul', 'noeuds', 'chateaux', 'capacite', 'alphabet', 'son'] as ExerciseType[]).filter(t => TYPE_SUBJECT[t] === sub.id).map(t => (
               <button key={t} className={'type-card' + (t === type ? ' on' : '')} onClick={() => changeType(t)} aria-pressed={t === type}>
                 <Thumb ex={{ ...draft, type: t, config: family(t) === family(type) ? config : defaultConfig(t) }} />
                 <b>{TYPE_LABEL[t]}</b>
@@ -116,7 +120,32 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
       <p className="help">{TYPE_HELP[type]}</p>
 
       <div className="form-grid">
-        {type === 'paquets' ? (
+        {type === 'noeuds' ? (
+          <>
+            <div className="field wide">
+              <span className="label">Parties à travailler</span>
+              <div className="seg">
+                {([['lire', 'Lire le nœud'], ['placer', 'Placer un objet'], ['bouger', 'Déplacer (2 à droite…)']] as [NoeudSkill, string][]).map(([k, l]) => {
+                  const sk = (config as NoeudsConfig).skills
+                  const on = sk.includes(k)
+                  return <button type="button" key={k} aria-pressed={on} disabled={on && sk.length === 1}
+                    onClick={() => upd({ skills: on ? sk.filter(x => x !== k) : [...sk, k] })}>{l}</button>
+                })}
+              </div>
+            </div>
+            <Chips label="Quadrillage" value={c.size} onChange={v => upd({ size: v })}
+              options={[{ v: 4, l: '4 × 4 (A-D)' }, { v: 5, l: '5 × 5 (A-E)' }, { v: 6, l: '6 × 6 (A-F)' }]} />
+          </>
+        ) : type === 'chateaux' ? (
+          <>
+            <Chips label="Tours" value={c.towers} onChange={v => upd({ towers: v })}
+              options={[{ v: 2, l: '2 tours' }, { v: 3, l: '3 tours (plus dur)' }]} />
+            <Stepper id="maxTotal" label="Cubes en tout, au maximum" value={c.maxTotal} min={8} max={40} onChange={n => upd({ maxTotal: n })} />
+          </>
+        ) : type === 'capacite' ? (
+          <Chips label="Comparaison" value={c.compare} onChange={v => upd({ compare: v })}
+            options={[{ v: 'verser', l: "L'enfant verse" }, { v: 'lire', l: 'On montre le résultat' }, { v: 'mix', l: 'Les deux' }]} />
+        ) : type === 'paquets' ? (
           <>
             <Chips label="Balles" value={c.extra ? 1 : 0} onChange={v => upd({ extra: v === 1 })}
               options={[{ v: 1, l: 'Plus que nécessaire' }, { v: 0, l: 'Juste le bon nombre' }]} />
@@ -125,6 +154,9 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
           </>
         ) : type === 'calcul' ? (
           <>
+            <Chips label="Genre de calculs" value={c.astuces ? 1 : 0} onChange={v => upd({ astuces: v === 1 })}
+              options={[{ v: 0, l: 'Je choisis (+n, −n)' }, { v: 1, l: 'Calculer efficacement (astuces)' }]} />
+            {!c.astuces && <>
             <Chips label="Opération" value={c.op} onChange={v => upd({ op: v })}
               options={[{ v: '+', l: 'Additions' }, { v: '-', l: 'Soustractions' }, { v: 'mix', l: 'Les deux' }]} />
             <Chips label="L'enfant cherche" value={c.find} onChange={v => upd({ find: v })}
@@ -146,6 +178,7 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
             </div>
             <Chips label="Le grand nombre" value={c.digits} onChange={v => upd({ digits: v })}
               options={[{ v: 1, l: '1 chiffre (0-9)' }, { v: 2, l: '2 chiffres (10-99)' }, { v: 3, l: '3 chiffres (100-999)' }]} />
+            </>}
           </>
         ) : type === 'son' ? (
           <>
@@ -173,10 +206,11 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
               <span className="label">Parties à travailler</span>
               <div className="seg">
                 {(['suite', 'position', 'voyelles', 'ranger'] as AlphaSkill[]).map(k => {
-                  const on = c.skills.includes(k)
+                  const sk = (config as AlphabetConfig).skills
+                  const on = sk.includes(k)
                   return (
-                    <button type="button" key={k} aria-pressed={on} disabled={on && c.skills.length === 1}
-                      onClick={() => upd({ skills: on ? c.skills.filter(x => x !== k) : [...c.skills, k] })}>
+                    <button type="button" key={k} aria-pressed={on} disabled={on && sk.length === 1}
+                      onClick={() => upd({ skills: on ? sk.filter(x => x !== k) : [...sk, k] })}>
                       {SKILL_LABEL[k]}
                     </button>
                   )
@@ -206,21 +240,25 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
           </>
         ) : (
           <>
-            <Chips label="On avance de" value={c.step} onChange={v => upd({ step: v })}
-              options={[1, 2, 5, 10].map(v => ({ v, l: String(v) }))} />
+            <Chips label="Consigne" value={c.oral ? 1 : 0} onChange={v => upd(v === 1 ? { oral: true, step: 1 } : { oral: false })}
+              options={[{ v: 0, l: 'Écrite : compléter la suite' }, { v: 1, l: 'Orale : « compte de 47 à 53 »' }]} />
+            {!c.oral && <Chips label="On avance de" value={c.step} onChange={v => upd({ step: v })}
+              options={[1, 2, 5, 10].map(v => ({ v, l: String(v) }))} />}
             <Chips label="Sens" value={c.direction} onChange={v => upd({ direction: v })}
               options={[{ v: 'up', l: 'En avant' }, { v: 'down', l: 'À rebours' }, { v: 'both', l: 'Les deux' }]} />
             <Stepper id="min" label="Nombre le plus petit" value={c.min} min={0} max={999} onChange={n => upd({ min: n })} />
             <Stepper id="max" label="Nombre le plus grand" value={c.max} min={1} max={1000} onChange={n => upd({ max: n })} />
             <Stepper id="len" label="Nombres dans la suite" value={c.length} min={4} max={8} onChange={n => upd({ length: n })} />
-            <Stepper id="blanks" label="Cases vides" value={c.blanks} min={1} max={Math.max(1, c.length - 2)} onChange={n => upd({ blanks: n })} />
+            {!c.oral && <Stepper id="blanks" label="Cases vides" value={c.blanks} min={1} max={Math.max(1, c.length - 2)} onChange={n => upd({ blanks: n })} />}
           </>
         )}
-        {type === 'paquets'
-          ? <Stepper id="q" label="Nombres par partie" value={c.questions} min={1} max={10} onChange={n => upd({ questions: n })} hint="5 nombres ≈ 5 minutes" />
+        {type === 'paquets' || type === 'chateaux' || type === 'capacite'
+          ? <Stepper id="q" label={type === 'paquets' ? 'Nombres par partie' : 'Questions par partie'} value={c.questions} min={1} max={10} onChange={n => upd({ questions: n })} hint={type === 'chateaux' ? 'Un château ≈ 2 minutes' : '5 questions ≈ 4 minutes'} />
           : type === 'table'
           ? <Stepper id="q" label="Tableaux par partie" value={c.questions} min={1} max={6} onChange={n => upd({ questions: n })} hint="Un tableau 4 × 4 ≈ 3 minutes" />
           : <Stepper id="q" label="Questions par partie" value={c.questions} min={3} max={20} onChange={n => upd({ questions: n })} hint="10 questions ≈ 5 minutes" />}
+        <Chips label="Révision du test" value={(config as { revision?: boolean }).revision ? 1 : 0} onChange={v => upd({ revision: v === 1 })}
+          options={[{ v: 1, l: 'Inclure dans la révision' }, { v: 0, l: 'Non' }]} />
         <div className="field wide">
           <label htmlFor="title">Nom affiché à l'enfant</label>
           <input id="title" maxLength={60} value={shownTitle} onChange={e => { setTitle(e.target.value); setTitleTouched(true) }} />

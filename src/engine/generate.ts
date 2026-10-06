@@ -1,7 +1,10 @@
-import type { PaquetsConfig, AlphabetConfig, CalculConfig, CollectionConfig, Exercise, SonConfig, SuiteConfig, TableConfig } from './types'
+import type { NoeudsConfig, ChateauxConfig, CapaciteConfig, PaquetsConfig, AlphabetConfig, CalculConfig, CollectionConfig, Exercise, SonConfig, SuiteConfig, TableConfig } from './types'
 import { hasSon, SON_BANK } from './sons'
 import { calcQuestion, type CalcQuestion } from './calcul'
 import { paquetsQuestion, type PaquetsQuestion } from './paquets'
+import { noeudsQuestion, noeudsSkills, nodeName, type NoeudsQuestion } from './noeuds'
+import { chateauxQuestion, type ChateauxQuestion } from './chateaux'
+import { capaciteQuestion, type CapaciteQuestion } from './capacite'
 import { alphaKey, alphaQuestion, alphaSkills, type AlphaQuestion } from './alphabet'
 
 export interface CollectionQuestion {
@@ -14,6 +17,8 @@ export interface SuiteQuestion {
   seq: number[]
   blanks: number[]
   step: number
+  /** consigne seulement à l'oral : toutes les cases sont vides */
+  oral?: boolean
 }
 /**
  * Tableau d'addition. Les cases sont repérées par "r,c" :
@@ -30,7 +35,7 @@ export interface SonQuestion {
   kind: 'son'
   word: string
 }
-export type Question = CollectionQuestion | SuiteQuestion | TableQuestion | AlphaQuestion | SonQuestion | CalcQuestion | PaquetsQuestion
+export type Question = NoeudsQuestion | ChateauxQuestion | CapaciteQuestion | CollectionQuestion | SuiteQuestion | TableQuestion | AlphaQuestion | SonQuestion | CalcQuestion | PaquetsQuestion
 
 export const cellKey = (r: number, c: number) => `${r},${c}`
 export function cellValue(q: TableQuestion, r: number, c: number): number {
@@ -81,6 +86,16 @@ function collectionOptions(t: number, c: CollectionConfig, count: number): numbe
 }
 
 function suiteQuestion(c: SuiteConfig): SuiteQuestion {
+  if (c.oral) {
+    // « Compte de 1 en 1 de 47 jusqu'à 53 » : l'enfant écrit tous les nombres.
+    const len = clamp(c.length || 6, 4, 8)
+    const lo = Math.max(0, c.min), hi = Math.max(lo + len, Math.min(100, c.max))
+    const start = rnd(lo, hi - len + 1)
+    let seq = Array.from({ length: len }, (_, i) => start + i)
+    const dir = c.direction === 'both' ? (Math.random() < 0.3 ? 'down' : 'up') : c.direction
+    if (dir === 'down') seq = seq.reverse()
+    return { kind: 'suite', seq, blanks: seq.map((_, i) => i), step: 1, oral: true }
+  }
   const step = Math.max(1, c.step)
   let len = clamp(c.length, 3, 10)
   const min = Math.max(0, c.min), max = Math.max(min + step * 2, c.max)
@@ -152,12 +167,15 @@ function sonRound(c: SonConfig): SonQuestion[] {
 
 export function makeRound(ex: Exercise): Question[] {
   if (ex.type === 'son') return sonRound(ex.config as SonConfig)
-  const n = clamp((ex.config as { questions?: number }).questions ?? 10, ex.type === 'table' || ex.type === 'paquets' ? 1 : 3, 20)
+  const n = clamp((ex.config as { questions?: number }).questions ?? 10, ex.type === 'table' || ex.type === 'paquets' || ex.type === 'chateaux' || ex.type === 'capacite' ? 1 : 3, 20)
   const out: Question[] = []
   const seen = new Set<string>()
   // Alphabet : les parties choisies tournent (suite, position, voyelles, ranger…), dans un ordre mélangé.
   const skillOrder = ex.type === 'alphabet'
     ? shuffle(Array.from({ length: n }, (_, i) => alphaSkills(ex.config as AlphabetConfig)[i % alphaSkills(ex.config as AlphabetConfig).length]))
+    : []
+  const nodeOrder = ex.type === 'noeuds'
+    ? shuffle(Array.from({ length: n }, (_, i) => noeudsSkills(ex.config as NoeudsConfig)[i % noeudsSkills(ex.config as NoeudsConfig).length]))
     : []
   for (let i = 0; i < n; i++) {
     let q: Question
@@ -167,6 +185,9 @@ export function makeRound(ex: Exercise): Question[] {
       else if (ex.type === 'table') q = tableQuestion(ex.config as TableConfig)
       else if (ex.type === 'calcul') q = calcQuestion(ex.config as CalculConfig)
       else if (ex.type === 'paquets') q = paquetsQuestion(ex.config as PaquetsConfig)
+      else if (ex.type === 'noeuds') q = noeudsQuestion(nodeOrder[i], ex.config as NoeudsConfig)
+      else if (ex.type === 'chateaux') q = chateauxQuestion(ex.config as ChateauxConfig)
+      else if (ex.type === 'capacite') q = capaciteQuestion(ex.config as CapaciteConfig)
       else if (ex.type === 'alphabet') q = alphaQuestion(skillOrder[i], ex.config as AlphabetConfig)
       else {
         const cfg = ex.config as CollectionConfig
@@ -186,6 +207,9 @@ function key(q: Question) {
   if (q.kind === 'son') return 'o' + q.word
   if (q.kind === 'calc') return 'k' + q.a + q.op + q.b + q.blank
   if (q.kind === 'paquets') return 'p' + q.target
+  if (q.kind === 'noeuds') return 'n' + q.skill + nodeName(q.at) + nodeName(q.answer)
+  if (q.kind === 'chateaux') return 'h' + q.answer.join(',') + q.rule
+  if (q.kind === 'capacite') return 'v' + Math.random()
   if (q.kind === 'table') return 't' + q.rows.join(',') + '|' + q.cols.join(',')
   return 's' + q.seq.join(',') + '|' + q.blanks.join(',')
 }

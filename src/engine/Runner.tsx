@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Star } from './Balls'
 import { CombienQ } from './CombienQ'
 import { EntoureQ } from './EntoureQ'
@@ -9,6 +9,12 @@ import { AlphaQ } from './AlphaQ'
 import { SonQ, SonRule } from './SonQ'
 import { CalcQ } from './CalcQ'
 import { PaquetsQ } from './PaquetsQ'
+import { NoeudsQ } from './NoeudsQ'
+import { ChateauxQ } from './ChateauxQ'
+import { CapaciteQ } from './CapaciteQ'
+import { moveText, nodeName } from './noeuds'
+import { ruleText } from './chateaux'
+import { explainCapacite } from './capacite'
 import { calcAnswer, opSign } from './calcul'
 import { isTrap } from './sons'
 import { LETTER_NAME } from './alphabet'
@@ -43,6 +49,7 @@ interface Props {
   onExit: () => void
 }
 
+const cap1 = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
 const PRAISE = ['Bravo', 'Super', 'Génial', 'Parfait', 'Excellent']
 
 export function Runner({ exercise, items, onFinished, childName, test, onRecord, onExit }: Props) {
@@ -77,6 +84,23 @@ export function Runner({ exercise, items, onFinished, childName, test, onRecord,
       const text = q.blank === 'c' ? <>Calcule.</> : <>Trouve le nombre qui manque.</>
       return { text, speech: `${W('a')} ${q.op === '+' ? 'plus' : 'moins'} ${W('b')}, égale ${W('c')} ?` }
     }
+    if (q.kind === 'noeuds') {
+      const N = nodeName(q.answer), T = q.thing.name
+      if (q.skill === 'lire') return { text: <>Sur quel nœud est {T} {q.thing.emoji} ?</>, speech: `Sur quel nœud est ${T} ?` }
+      if (q.skill === 'placer') return { text: <>Place {T} {q.thing.emoji} sur le nœud <strong>{N}</strong>.</>, speech: `Place ${T} sur le nœud ${N.split('').join(' ')}. Touche le bon nœud.` }
+      const m = moveText(q.move!)
+      return { text: <>{cap1(T)} {q.thing.emoji} part du nœud <strong>{nodeName(q.at)}</strong> et avance de {m}. Touche le nœud d'arrivée.</>, speech: `${cap1(T)} part du nœud ${nodeName(q.at).split('').join(' ')} et avance de ${m}. Touche le nœud d'arrivée.` }
+    }
+    if (q.kind === 'chateaux')
+      return { text: <>Construis le château : {q.towers} tours qui respectent les 2 conditions.</>, speech: `Construis un château de ${words(q.total)} cubes. ${ruleText(q)} Essaie, vérifie, puis ajuste.` }
+    if (q.kind === 'capacite')
+      return q.mode === 'verser'
+        ? { text: <>Qui contient le plus ? Verse le <strong style={{ color: q.a.color }}>{q.a.name}</strong> dans le <strong style={{ color: q.b.color }}>{q.b.name}</strong> pour comparer.</>, speech: `Qui contient le plus ? Le récipient ${q.a.name} est plein. Verse-le dans le ${q.b.name} pour comparer.` }
+        : { text: <>Qui contient le plus ?</>, speech: `On a rempli le ${q.a.name} jusqu'en haut, puis on l'a versé dans le ${q.b.name}. Lequel contient le plus ?` }
+    if (q.kind === 'suite' && q.oral) {
+      const down = q.seq[1] < q.seq[0]
+      return { text: <>Écoute bien la consigne 🔊 et écris les nombres.</>, speech: `Compte de 1 en 1${down ? ' en reculant' : ''}, de ${words(q.seq[0])} jusqu'à ${words(q.seq[q.seq.length - 1])}. Écris tous les nombres.` }
+    }
     if (q.kind === 'paquets')
       return { text: <>Fais des paquets de 10 pour obtenir <strong>{q.target}</strong> balles.</>, speech: `Fais des paquets de 10 pour obtenir ${words(q.target)} balles. Entoure 10 balles avec ton doigt.` }
     if (q.kind === 'son') return { text: <>Complète le mot avec <strong>on</strong> ou <strong>om</strong>.</>, speech: `Complète le mot ${q.word} avec o, n, ou o, m.` }
@@ -94,6 +118,14 @@ export function Runner({ exercise, items, onFinished, childName, test, onRecord,
       return { text: <>Complète les cases vides du tableau.</>, speech: 'Complète les cases vides du tableau. Touche une case vide, puis écris le nombre.' }
     return { text: <>Complète la suite.</>, speech: 'Complète la suite. Trouve les nombres qui manquent.' }
   }, [q, ex.type])
+
+  // Consigne orale : l'app la dit toute seule au début de chaque question.
+  useEffect(() => {
+    if (phase !== 'play' || !q || !(q.kind === 'suite' && q.oral)) return
+    const t = setTimeout(() => say(prompt.speech), 450)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, phase])
 
   const onAttempt = (given: string, expected: string, correct: boolean) => {
     const first = tries.current === 0
@@ -114,7 +146,17 @@ export function Runner({ exercise, items, onFinished, childName, test, onRecord,
       tries.current++
       misses.current++
       sounds.bad()
-      const hint = q.kind === 'paquets'
+      const hint = q.kind === 'noeuds'
+        ? (q.skill === 'lire' ? "Descends jusqu'à la lettre de la colonne, puis va à gauche jusqu'au chiffre de la ligne."
+          : q.skill === 'placer' ? `Ça, c'est le nœud ${given}. Trouve d'abord la colonne (la lettre en bas), puis la ligne (le chiffre à gauche).`
+          : `Ça, c'est le nœud ${given}. Pose ton doigt sur ${nodeName(q.at)} et compte les nœuds un par un.`)
+        : q.kind === 'capacite'
+        ? "Regarde bien : est-ce que l'eau a débordé ? Ou est-ce que le récipient n'est pas plein ?"
+        : q.kind === 'calc' && q.tip
+        ? 'Utilise l’astuce !'
+        : q.kind === 'suite' && q.oral
+        ? 'Réécoute la consigne avec le haut-parleur. On avance de 1 à chaque fois.'
+        : q.kind === 'paquets'
         ? (Number(given) < Number(expected) ? 'Il te manque des balles : ajoute un paquet de 10 ou des balles seules.' : 'Tu en as trop : enlève des balles.')
         : q.kind === 'calc'
         ? (q.blank === 'a' ? "Fais le calcul à l'envers pour retrouver le premier nombre." : q.op === '+' ? 'Compte en avançant de 1 en 1 depuis le premier nombre.' : 'Compte en reculant de 1 en 1 depuis le premier nombre.')
@@ -146,6 +188,15 @@ export function Runner({ exercise, items, onFinished, childName, test, onRecord,
       const t = q.target, p = Math.floor(t / 10), u = t % 10
       sub = `${p} paquet${p > 1 ? 's' : ''} de 10${u ? ` et ${u} balle${u > 1 ? 's' : ''}` : ''} = ${t} (${words(t)})`
       say(`${words(t)} balles ! ${first ? praise : ''}`)
+    } else if (q.kind === 'noeuds') {
+      sub = q.skill === 'bouger' ? `${cap1(q.thing.name)} arrive sur le nœud ${nodeName(q.answer)}.` : `${cap1(q.thing.name)} est sur le nœud ${nodeName(q.answer)} : colonne ${nodeName(q.answer)[0]}, ligne ${nodeName(q.answer).slice(1)}.`
+      say(`${nodeName(q.answer).split('').join(' ')}. ${praise}`)
+    } else if (q.kind === 'chateaux') {
+      sub = `${q.answer.join(' + ')} = ${q.total} cubes. Tu as bien ajusté tes essais !`
+      say(praise)
+    } else if (q.kind === 'capacite') {
+      sub = explainCapacite(q)
+      say(`${praise} ${sub}`)
     } else if (q.kind === 'paquets') {
       const t = q.target, p = Math.floor(t / 10), u = t % 10
       sub = `${p} paquet${p > 1 ? 's' : ''} de 10${u ? ` et ${u} balle${u > 1 ? 's' : ''}` : ''} = ${t} (${words(t)})`
@@ -165,7 +216,7 @@ export function Runner({ exercise, items, onFinished, childName, test, onRecord,
     } else if (q.kind === 'table') {
       sub = first ? 'Tableau complet, sans une seule erreur !' : `Tableau complet ! ${misses.current} erreur${misses.current > 1 ? 's' : ''} corrigée${misses.current > 1 ? 's' : ''}.`
       say(praise)
-    } else {
+    } else if (q.kind === 'suite') {
       const down = q.seq[1] < q.seq[0]
       sub = `On ${down ? 'recule' : 'avance'} de ${q.step} à chaque fois.`
       say(praise)
@@ -246,6 +297,15 @@ export function Runner({ exercise, items, onFinished, childName, test, onRecord,
           )}
           {ex.type === 'combien' && q.kind === 'collection' && (
             <CombienQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
+          )}
+          {q.kind === 'noeuds' && (
+            <NoeudsQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
+          )}
+          {q.kind === 'chateaux' && (
+            <ChateauxQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={s => setMsg({ kind: 'no', title: 'Ajuste !', sub: s })} />
+          )}
+          {q.kind === 'capacite' && (
+            <CapaciteQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
           )}
           {q.kind === 'paquets' && (
             <>

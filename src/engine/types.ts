@@ -1,6 +1,6 @@
 // Types partagés entre le moteur, la base et les écrans.
 
-export type ExerciseType = 'entoure' | 'combien' | 'paquets' | 'suite' | 'table' | 'calcul' | 'alphabet' | 'son'
+export type ExerciseType = 'entoure' | 'combien' | 'paquets' | 'suite' | 'table' | 'calcul' | 'noeuds' | 'chateaux' | 'capacite' | 'alphabet' | 'son'
 
 /** Matières affichées sur l'accueil. La matière d'un exercice découle de son type. */
 export type Subject = 'maths' | 'francais'
@@ -17,6 +17,9 @@ export const TYPE_SUBJECT: Record<ExerciseType, Subject> = {
   suite: 'maths',
   table: 'maths',
   calcul: 'maths',
+  noeuds: 'maths',
+  chateaux: 'maths',
+  capacite: 'maths',
   alphabet: 'francais',
   son: 'francais',
 }
@@ -38,6 +41,10 @@ export interface SuiteConfig {
   length: number
   blanks: number
   direction: 'up' | 'down' | 'both'
+  /** consigne donnée seulement à l'oral : « compte de 1 en 1 de 47 à 53 », toutes les cases sont vides */
+  oral?: boolean
+  /** jeu inclus dans la « Révision du test » */
+  revision?: boolean
   questions: number
 }
 
@@ -92,6 +99,37 @@ export interface CalculConfig {
   digits: 1 | 2 | 3
   /** ce que l'enfant cherche */
   find: 'resultat' | 'manquant' | 'mix'
+  /** « Calculer efficacement » : amis de 10, doubles, +9, +10… (remplace op/steps/digits) */
+  astuces?: boolean
+  revision?: boolean
+  questions: number
+}
+
+/** Situer un objet sur les nœuds d'un quadrillage (colonnes A, B, C… et lignes 1, 2, 3…). */
+export type NoeudSkill = 'lire' | 'placer' | 'bouger'
+export interface NoeudsConfig {
+  /** nombre de colonnes et de lignes (4 à 6) */
+  size: number
+  skills: NoeudSkill[]
+  revision?: boolean
+  questions: number
+}
+
+/** Ajustements d'essais successifs : construire des tours de cubes qui respectent deux conditions. */
+export interface ChateauxConfig {
+  /** nombre de tours : 2 ou 3 */
+  towers: 2 | 3
+  /** nombre total de cubes le plus grand */
+  maxTotal: number
+  revision?: boolean
+  questions: number
+}
+
+/** Comparer deux récipients en versant l'un dans l'autre. */
+export interface CapaciteConfig {
+  /** 'verser' = l'enfant verse lui-même ; 'lire' = on montre le résultat ; 'mix' */
+  compare: 'verser' | 'lire' | 'mix'
+  revision?: boolean
   questions: number
 }
 
@@ -104,7 +142,7 @@ export interface PaquetsConfig {
   questions: number
 }
 
-export type ExerciseConfig = PaquetsConfig | CollectionConfig | SuiteConfig | TableConfig | CalculConfig | AlphabetConfig | SonConfig
+export type ExerciseConfig = NoeudsConfig | ChateauxConfig | CapaciteConfig | PaquetsConfig | CollectionConfig | SuiteConfig | TableConfig | CalculConfig | AlphabetConfig | SonConfig
 
 export interface Exercise {
   id: string
@@ -142,6 +180,9 @@ export const TYPE_LABEL: Record<ExerciseType, string> = {
   suite: 'Complète la suite',
   table: "Tableau d'addition",
   calcul: 'Calcul',
+  noeuds: 'Les nœuds',
+  chateaux: 'Les châteaux',
+  capacite: 'Qui contient le plus ?',
   alphabet: "L'alphabet",
   son: 'Le son on / om',
 }
@@ -153,6 +194,9 @@ export const TYPE_HELP: Record<ExerciseType, string> = {
   suite: "L'enfant complète les cases vides d'une suite de nombres avec un clavier.",
   table: "L'enfant complète les cases vides d'un tableau d'addition. En mode mixte, il retrouve aussi des nombres des en-têtes à partir d'une somme.",
   calcul: "Additions et soustractions du type 34 + 3 ou 47 − 5. Choisissez les nombres à ajouter ou enlever (+0 à +10), la taille du grand nombre, et si l'enfant cherche le résultat ou le nombre manquant (34 + ? = 37).",
+  noeuds: "Un quadrillage avec des colonnes (A, B, C…) et des lignes (1, 2, 3…). L'enfant lit sur quel nœud se trouve un objet, place un objet sur un nœud, ou le déplace (« 2 nœuds à droite »).",
+  chateaux: "Stratégie « ajustements d'essais successifs » : l'enfant construit des tours de cubes qui respectent deux conditions (ex. 15 cubes en tout, la tour de droite a 3 cubes de plus). Il essaie, vérifie, puis ajuste.",
+  capacite: "Comparaison directe : on remplit un récipient et on le verse dans l'autre. S'il déborde, le premier contient plus ; s'il n'est pas plein, il contient moins. Les récipients ont des formes trompeuses (haut et fin, bas et large).",
   alphabet: "Lettre qui manque dans l'alphabet, lettre avant / après / entre, trouver les voyelles, ranger des mots selon l'ordre alphabétique (1re lettre). Les questions sont tirées au hasard parmi les parties choisies.",
   son: "La règle (m devant m, b, p) s'affiche au début, puis l'enfant choisit « on » ou « om » pour compléter chaque mot. Les mots à travailler reviennent à chaque partie ; les mots pièges (bonbon, nom, prénom…) sont repérés automatiquement.",
 }
@@ -160,6 +204,9 @@ export const TYPE_HELP: Record<ExerciseType, string> = {
 export function defaultConfig(type: ExerciseType): ExerciseConfig {
   if (type === 'suite') return { min: 10, max: 100, step: 10, length: 6, blanks: 1, direction: 'up', questions: 10 }
   if (type === 'table') return { min: 2, max: 9, size: 4, mode: 'sommes', questions: 2 }
+  if (type === 'noeuds') return { size: 5, skills: ['lire', 'placer', 'bouger'], questions: 8 }
+  if (type === 'chateaux') return { towers: 2, maxTotal: 20, questions: 5 }
+  if (type === 'capacite') return { compare: 'mix', questions: 6 }
   if (type === 'paquets') return { min: 11, max: 49, extra: true, questions: 5 }
   if (type === 'calcul') return { op: '+', steps: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], digits: 2, find: 'resultat', questions: 10 }
   if (type === 'son') return { focus: ['ombre', 'tomber', 'prénom', 'nom', 'ballon', 'pompon', 'bonbon'], extra: true, showRule: true, questions: 12 }
@@ -185,6 +232,16 @@ export const PAQUETS_SEED: Omit<Exercise, 'id'>[] = [
   { type: 'paquets', title: 'Compte avec des paquets', config: { min: 11, max: 39, extra: false, questions: 4 }, active: true, position: 1 },
 ]
 
+/** Test de maths du jeudi 8 octobre (MSN 11-14). */
+export const TEST_SEED: Omit<Exercise, 'id'>[] = [
+  { type: 'noeuds', title: 'Les nœuds', config: { size: 5, skills: ['lire', 'placer', 'bouger'], revision: true, questions: 8 }, active: true, position: 0 },
+  { type: 'suite', title: 'La suite jusqu’à 100', config: { min: 0, max: 100, step: 1, length: 6, blanks: 2, direction: 'both', revision: true, questions: 8 }, active: true, position: 1 },
+  { type: 'suite', title: 'Compter de 1 en 1 (à l’oral)', config: { min: 0, max: 100, step: 1, length: 6, blanks: 6, direction: 'up', oral: true, revision: true, questions: 6 }, active: true, position: 2 },
+  { type: 'chateaux', title: 'Les châteaux', config: { towers: 2, maxTotal: 20, revision: true, questions: 5 }, active: true, position: 3 },
+  { type: 'calcul', title: 'Calculer efficacement', config: { op: '+', steps: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], digits: 2, find: 'resultat', astuces: true, revision: true, questions: 10 }, active: true, position: 4 },
+  { type: 'capacite', title: 'Qui contient le plus ?', config: { compare: 'mix', revision: true, questions: 6 }, active: true, position: 5 },
+]
+
 export const SON_SEED: Omit<Exercise, 'id'>[] = [
   { type: 'son', title: 'Le son on / om', config: { focus: ['ombre', 'tomber', 'prénom', 'nom', 'ballon', 'pompon', 'bonbon'], extra: true, showRule: true, questions: 12 }, active: true, position: 0 },
   { type: 'son', title: 'Mes 7 mots on / om', config: { focus: ['ombre', 'tomber', 'prénom', 'nom', 'ballon', 'pompon', 'bonbon'], extra: false, showRule: false, questions: 7 }, active: true, position: 1 },
@@ -200,4 +257,5 @@ export const SEED_EXERCISES: Omit<Exercise, 'id'>[] = [
   ...SON_SEED.map((e, i) => ({ ...e, position: 9 + i })),
   ...CALCUL_SEED.map((e, i) => ({ ...e, position: 11 + i })),
   ...PAQUETS_SEED.map((e, i) => ({ ...e, position: 14 + i })),
+  ...TEST_SEED.map((e, i) => ({ ...e, position: 16 + i })),
 ]

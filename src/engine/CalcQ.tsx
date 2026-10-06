@@ -41,7 +41,7 @@ export function CalcQ({ q, onAttempt, onSolved }: QProps<CalcQuestion>) {
   }
 
   // Aide après une erreur : on compte les bonds de 1 depuis le premier nombre.
-  const hops = help && q.blank !== 'a' && q.b > 0 && q.b <= 10
+  const hops = help && !q.tip && q.blank !== 'a' && q.b > 0 && q.b <= 10
     ? Array.from({ length: q.b + 1 }, (_, i) => (q.op === '+' ? q.a + i : q.a - i))
     : null
 
@@ -57,7 +57,9 @@ export function CalcQ({ q, onAttempt, onSolved }: QProps<CalcQuestion>) {
 
       {help && (
         <div className="calc-help">
-          {hops ? (
+          {q.tip ? (
+            <p>Astuce : {q.tip}</p>
+          ) : hops ? (
             <div className="hops" aria-label="Compter les bonds">
               {hops.map((n, i) => (
                 <span key={i} className={'hop' + (i === 0 ? ' start' : '')}>

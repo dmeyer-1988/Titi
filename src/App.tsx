@@ -15,9 +15,9 @@ import { STICKERS } from './album/catalog'
 import { fetchAlbum } from './lib/albumStore'
 import { getMembership, type Membership } from './lib/teamStore'
 import { Team } from './screens/Team'
-import { buildDaily, completeDaily, fetchDaily } from './lib/daily'
+import { buildDaily, buildRevision, completeDaily, fetchDaily } from './lib/daily'
 
-type View = { name: 'home' } | { name: 'play'; ex: Exercise } | { name: 'pin' } | { name: 'parent' } | { name: 'album' } | { name: 'team' } | { name: 'daily'; items: RoundItem[] }
+type View = { name: 'home' } | { name: 'play'; ex: Exercise } | { name: 'pin' } | { name: 'parent' } | { name: 'album' } | { name: 'team' } | { name: 'daily'; items: RoundItem[] } | { name: 'revision'; items: RoundItem[] }
 
 const CHILD_KEY = 'balles-child'
 
@@ -173,6 +173,25 @@ export default function App() {
         />
       </div>
     )
+  } else if (view.name === 'revision') {
+    const revEx: Exercise = { id: 'revision', type: 'calcul', title: 'Révision du test', config: family.exercises[0]?.config, active: true, position: 0 } as Exercise
+    screen = (
+      <div className="sheet">
+        <Runner
+          exercise={revEx}
+          items={view.items}
+          childName={child.name}
+          onRecord={a => {
+            recordAttempt(child.id, a)
+            if (a.first_try && a.correct) {
+              setEarned(e => e + 1)
+              if (a.exercise_id) setStars(s => ({ ...s, [a.exercise_id!]: (s[a.exercise_id!] || 0) + 1 }))
+            }
+          }}
+          onExit={() => { setView({ name: 'home' }); void loadStars() }}
+        />
+      </div>
+    )
   } else if (view.name === 'album') {
     screen = <Album childId={child.id} earned={earned + daily.bonus} price={family.packPrice ?? 10} onExit={() => { setView({ name: 'home' }); void loadStars() }} />
   } else if (view.name === 'team' && team) {
@@ -215,6 +234,7 @@ export default function App() {
         dailyDone={daily.doneToday}
         dailyReady={family.exercises.some(e => e.active && e.type !== 'table')}
         onDaily={() => setView({ name: 'daily', items: buildDaily(family.exercises, attempts) })}
+        onRevision={s => setView({ name: 'revision', items: buildRevision(family.exercises, s) })}
         albumOwned={album?.owned ?? null}
         albumTotal={STICKERS.length}
         onAlbum={() => setView({ name: 'album' })}

@@ -5,6 +5,9 @@ import { Mascot } from '../mascot/Mascot'
 import type { Mood } from '../mascot/Otter'
 
 export function Thumb({ ex }: { ex: Exercise }) {
+  if (ex.type === 'calcul' && (ex.config as { astuces?: boolean }).astuces) {
+    return <div className="thumb calc-thumb" aria-hidden="true"><span>7</span><i>+</i><span className="q">?</span><i>=</i><span>10</span></div>
+  }
   if (ex.type === 'calcul') {
     const c = ex.config as { op?: string; find?: string }
     const sign = c.op === '-' ? '−' : '+'
@@ -15,6 +18,39 @@ export function Thumb({ ex }: { ex: Exercise }) {
         <span className={miss ? '' : 'q'}>{miss ? (sign === '+' ? '37' : '31') : '?'}</span>
       </div>
     )
+  }
+  if (ex.type === 'noeuds') {
+    return (
+      <div className="thumb noeud-thumb" aria-hidden="true">
+        <svg viewBox="0 0 90 70">
+          {[0, 1, 2, 3].map(i => <g key={i}><line x1={14 + i * 22} y1={6} x2={14 + i * 22} y2={58} /><line x1={14} y1={6 + i * 17.3} x2={80} y2={6 + i * 17.3} /></g>)}
+          <text x="58" y="30" fontSize="20" textAnchor="middle">🐱</text>
+          <text x="58" y="69" className="lab" textAnchor="middle">C</text>
+        </svg>
+      </div>
+    )
+  }
+  if (ex.type === 'chateaux') {
+    return (
+      <div className="thumb chateau-thumb" aria-hidden="true">
+        {[3, 5].map((h, i) => <span key={i} className={'t' + i}>{Array.from({ length: h }, (_, k) => <i key={k} />)}</span>)}
+      </div>
+    )
+  }
+  if (ex.type === 'capacite') {
+    return (
+      <div className="thumb cap-thumb" aria-hidden="true">
+        <svg viewBox="0 0 96 70">
+          <rect x="14" y="16" width="18" height="48" fill="#6FB7E8" />
+          <path d="M12 8 V66 H34 V8" fill="none" stroke="#D6453A" strokeWidth="4" />
+          <rect x="48" y="44" width="40" height="20" fill="#6FB7E8" />
+          <path d="M46 34 V66 H90 V34" fill="none" stroke="#2F8F55" strokeWidth="4" />
+        </svg>
+      </div>
+    )
+  }
+  if (ex.type === 'suite' && (ex.config as { oral?: boolean }).oral) {
+    return <div className="thumb suite-thumb oral" aria-hidden="true"><span>🔊</span><span className="empty" /><span className="empty" /></div>
   }
   if (ex.type === 'paquets') {
     const pos: [number, number][] = [[18, 22], [34, 16], [50, 26], [22, 44], [40, 40], [60, 46], [30, 66], [48, 62], [16, 76], [64, 72], [80, 30], [84, 62]]
@@ -106,6 +142,7 @@ interface Props {
   onSubject: (s: Subject | null) => void
   onPickChild: (id: string) => void
   onPlay: (ex: Exercise) => void
+  onRevision: (s: Subject) => void
   onParent: () => void
 }
 
@@ -125,7 +162,7 @@ function greeting(p: Props): { text: string; mood: Mood } {
 }
 
 export function Home(p: Props) {
-  const { children, child, exercises, stars, wallet, packPrice, weekDays, dailyDone, dailyReady, onDaily, albumOwned, albumTotal, onAlbum, team, onTeam, offline, subject, onSubject, onPickChild, onPlay, onParent } = p
+  const { children, child, exercises, stars, wallet, packPrice, weekDays, dailyDone, dailyReady, onDaily, albumOwned, albumTotal, onAlbum, team, onTeam, offline, subject, onSubject, onPickChild, onPlay, onRevision, onParent } = p
   const active = exercises.filter(e => e.active)
   const bySubject = (s: Subject) => active.filter(e => TYPE_SUBJECT[e.type] === s)
   const starsFor = (list: Exercise[]) => list.reduce((a, e) => a + (stars[e.id] || 0), 0)
@@ -151,6 +188,16 @@ export function Home(p: Props) {
           <div className="total-stars" aria-label={`${wallet} étoiles`}>{starIcon}<span>{wallet}</span></div>
         </header>
         <p className="lead">Choisis un jeu.</p>
+        {games.some(e => (e.config as { revision?: boolean }).revision) && (
+          <button className="daily revision" onClick={() => onRevision(current.id)}>
+            <span className="daily-text">
+              <span className="eyebrow-light">Révision du test</span>
+              <b>Un peu de tout, comme le jour du test</b>
+              <span className="daily-reward">{games.filter(e => (e.config as { revision?: boolean }).revision).length} jeux mélangés</span>
+            </span>
+            <span className="daily-go" aria-hidden="true">▶</span>
+          </button>
+        )}
         {games.length === 0 ? (
           <p className="empty-note">Pas encore de jeu ici. Demande à papa ou maman d'en ajouter un.</p>
         ) : (
