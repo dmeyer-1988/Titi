@@ -229,7 +229,7 @@ export default function App() {
         stars={stars}
         wallet={Math.max(0, earned + daily.bonus - (album?.spent ?? 0))}
         packPrice={family.packPrice ?? 10}
-        mascotName={child.mascot_name || 'Loulou'}
+        mascotName={child.mascot_name || 'Bigou'}
         weekDays={weekMask(attempts)}
         dailyDone={daily.doneToday}
         dailyReady={family.exercises.some(e => e.active && e.type !== 'table')}

@@ -152,7 +152,7 @@ function Profile({ uid, email, children, child, pin, packPrice, onChanged }: Pro
   const [price, setPrice] = useState(packPrice)
   const [names, setNames] = useState<Record<string, string>>(() => Object.fromEntries(children.map(c => [c.id, c.name])))
   const [newName, setNewName] = useState('')
-  const [mascots, setMascots] = useState<Record<string, string>>(() => Object.fromEntries(children.map(c => [c.id, c.mascot_name || 'Loulou'])))
+  const [mascots, setMascots] = useState<Record<string, string>>(() => Object.fromEntries(children.map(c => [c.id, c.mascot_name || 'Bigou'])))
   const [newPin, setNewPin] = useState('')
   const [pw1, setPw1] = useState('')
   const [pw2, setPw2] = useState('')
@@ -245,7 +245,7 @@ function Profile({ uid, email, children, child, pin, packPrice, onChanged }: Pro
           <div className="row" key={'m' + c.id}>
             <span className="mascot-label">🦦 {c.name}</span>
             <input id={`mascot-${c.id}`} aria-label={`Nom de la mascotte de ${c.name}`} maxLength={20} value={mascots[c.id] ?? ''} onChange={e => setMascots(m => ({ ...m, [c.id]: e.target.value }))} />
-            <button className="btn ghost small" disabled={!mascots[c.id]?.trim() || mascots[c.id] === (c.mascot_name || 'Loulou')} onClick={() => run('kids', () => setMascotName(c.id, mascots[c.id]), 'Nom de la loutre enregistré.')}>Enregistrer</button>
+            <button className="btn ghost small" disabled={!mascots[c.id]?.trim() || mascots[c.id] === (c.mascot_name || 'Bigou')} onClick={() => run('kids', () => setMascotName(c.id, mascots[c.id]), 'Nom de la loutre enregistré.')}>Enregistrer</button>
           </div>
         ))}
         <div className="row">
