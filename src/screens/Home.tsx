@@ -144,6 +144,7 @@ interface Props {
   offline: boolean
   subject: Subject | null
   onSubject: (s: Subject | null) => void
+  onPath: (s: Subject) => void
   onPickChild: (id: string) => void
   onPlay: (ex: Exercise) => void
   onRevision: (s: Subject) => void
@@ -166,7 +167,7 @@ function greeting(p: Props): { text: string; mood: Mood } {
 }
 
 export function Home(p: Props) {
-  const { children, child, exercises, stars, wallet, packPrice, weekDays, dailyDone, dailyReady, onDaily, albumOwned, albumTotal, onAlbum, team, onTeam, offline, subject, onSubject, onPickChild, onPlay, onRevision, onParent } = p
+  const { children, child, exercises, stars, wallet, packPrice, weekDays, dailyDone, dailyReady, onDaily, albumOwned, albumTotal, onAlbum, team, onTeam, offline, subject, onSubject, onPath, onPickChild, onPlay, onRevision, onParent } = p
   const active = exercises.filter(e => e.active)
   const bySubject = (s: Subject) => active.filter(e => TYPES[e.type].subject === s)
   const starsFor = (list: Exercise[]) => list.reduce((a, e) => a + (stars[e.id] || 0), 0)
@@ -192,6 +193,14 @@ export function Home(p: Props) {
           <div className="total-stars" aria-label={`${wallet} étoiles`}>{starIcon}<span>{wallet}</span></div>
         </header>
         <p className="lead">Choisis un jeu.</p>
+        <button className="daily carte" onClick={() => onPath(current.id)}>
+          <span className="daily-text">
+            <span className="eyebrow-light">Le chemin des jeux</span>
+            <b>La carte — avance de nœud en nœud</b>
+            <span className="daily-reward">Bigou t'attend au prochain nœud</span>
+          </span>
+          <span className="daily-go" aria-hidden="true">🗺️</span>
+        </button>
         {games.some(e => (e.config as { revision?: boolean }).revision) && (
           <button className="daily revision" onClick={() => onRevision(current.id)}>
             <span className="daily-text">

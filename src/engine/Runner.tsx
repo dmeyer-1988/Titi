@@ -28,6 +28,8 @@ import { Celebrate, Fireworks } from '../mascot/Fireworks'
 export interface AttemptDraft {
   exercise_id: string | null
   exercise_type: Exercise['type']
+  /** compétence de la carte, quand la partie vient d'un nœud du chemin */
+  skill_id?: string | null
   prompt: Record<string, unknown>
   expected: string
   given: string
@@ -46,6 +48,8 @@ interface Props {
   childName?: string
   /** Mode test (espace parent) : rien n'est enregistré. */
   test?: boolean
+  /** Compétence de la carte : les réponses y sont rattachées (attempts.skill_id). */
+  skill?: string
   onRecord?: (a: AttemptDraft) => void
   onExit: () => void
 }
@@ -53,7 +57,7 @@ interface Props {
 const cap1 = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
 const PRAISE = ['Bravo', 'Super', 'Génial', 'Parfait', 'Excellent']
 
-export function Runner({ exercise, items, onFinished, childName, test, onRecord, onExit }: Props) {
+export function Runner({ exercise, items, onFinished, childName, test, skill, onRecord, onExit }: Props) {
   const build = (): RoundItem[] => items ?? makeRound(exercise).map(q => ({ ex: exercise, q }))
   const [round, setRound] = useState<RoundItem[]>(build)
   const [idx, setIdx] = useState(0)
@@ -136,6 +140,7 @@ export function Runner({ exercise, items, onFinished, childName, test, onRecord,
       onRecord({
         exercise_id: ex.id,
         exercise_type: ex.type,
+        skill_id: skill ?? null,
         prompt: q as unknown as Record<string, unknown>,
         expected, given, correct, first_try: first,
       })

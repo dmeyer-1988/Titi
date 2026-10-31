@@ -179,6 +179,8 @@ export interface Attempt {
   child_id: string
   exercise_id: string | null
   exercise_type: ExerciseType
+  /** compétence de la carte, quand la réponse vient d'un nœud du chemin */
+  skill_id?: string | null
   prompt: Record<string, unknown>
   expected: string
   given: string

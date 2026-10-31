@@ -173,7 +173,7 @@ export async function flushQueue() {
 
 export async function fetchAttempts(opts: { childId?: string; sinceDays?: number } = {}): Promise<Attempt[]> {
   let query = supabase.from('attempts')
-    .select('id,child_id,exercise_id,exercise_type,prompt,expected,given,correct,first_try,created_at')
+    .select('id,child_id,exercise_id,exercise_type,skill_id,prompt,expected,given,correct,first_try,created_at')
     .order('created_at', { ascending: false })
     .limit(5000)
   if (opts.childId) query = query.eq('child_id', opts.childId)

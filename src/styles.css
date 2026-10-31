@@ -1019,3 +1019,21 @@ button.sticker { cursor: pointer; }
 .check { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; line-height: 1.45; margin: 4px 0 8px; }
 .check input { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--court); flex: none; }
 .text-link.inline { display: inline; margin-top: 0; font-size: inherit; }
+
+/* ---------- Le chemin des jeux (carte) ---------- */
+.pathmap { position: relative; max-width: 460px; margin: 0 auto; }
+.pathmap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pnode { position: absolute; transform: translate(-50%, -50%); width: 72px; border: 0; background: none; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; }
+.pnode:disabled { cursor: default; }
+.pnode-num { width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; font-family: var(--display); font-weight: 800; font-size: 24px; background: #fff; color: var(--ink); box-shadow: 0 4px 10px rgba(0, 0, 0, .18); border: 4px solid var(--rule); }
+.pnode.current .pnode-num { border-color: var(--red); animation: nodepulse 1.6s infinite; }
+.pnode.done .pnode-num { border-color: var(--gold); }
+.pnode.locked .pnode-num { background: #E4E9EE; color: #93A1AD; border-color: #D3DCE3; font-size: 20px; }
+.pnode-stars { font-size: 15px; color: var(--gold); letter-spacing: 1px; text-shadow: 0 1px 0 rgba(0, 0, 0, .18); }
+.pnode-label { font-size: 12.5px; font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .35); max-width: 112px; text-align: center; line-height: 1.15; }
+.pnode.locked .pnode-label { color: rgba(255, 255, 255, .6); }
+.path-otter { position: absolute; width: 76px; transform: translate(-50%, -106%); transition: left .7s ease, top .7s ease; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .28)); }
+.path-otter .otter { width: 100%; height: auto; }
+@keyframes nodepulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(214, 69, 58, .45); } 50% { box-shadow: 0 0 0 12px rgba(214, 69, 58, 0); } }
+.path-hint { max-width: 62ch; }
+.daily.carte .daily-go { font-size: 30px; }

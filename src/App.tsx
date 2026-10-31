@@ -13,6 +13,7 @@ import { Parent } from './screens/Parent'
 import { PinGate } from './screens/PinGate'
 import { Setup } from './screens/Setup'
 import { Privacy } from './screens/Privacy'
+import { Path } from './screens/Path'
 import { Album } from './album/Album'
 import { STICKERS } from './album/catalog'
 import { fetchAlbum } from './lib/albumStore'
@@ -20,7 +21,7 @@ import { getMembership, type Membership } from './lib/teamStore'
 import { Team } from './screens/Team'
 import { buildDaily, buildRevision, completeDaily, fetchDaily } from './lib/daily'
 
-type View = { name: 'home' } | { name: 'play'; ex: Exercise } | { name: 'pin' } | { name: 'parent' } | { name: 'album' } | { name: 'team' } | { name: 'daily'; items: RoundItem[] } | { name: 'revision'; items: RoundItem[] } | { name: 'privacy' } | { name: 'login' } | { name: 'signup' }
+type View = { name: 'home' } | { name: 'play'; ex: Exercise; skillId?: string; skillSubject?: Subject } | { name: 'path'; subject: Subject } | { name: 'pin' } | { name: 'parent' } | { name: 'album' } | { name: 'team' } | { name: 'daily'; items: RoundItem[] } | { name: 'revision'; items: RoundItem[] } | { name: 'privacy' } | { name: 'login' } | { name: 'signup' }
 
 const CHILD_KEY = 'balles-child'
 
@@ -156,6 +157,7 @@ export default function App() {
         <Runner
           exercise={view.ex}
           childName={child.name}
+          skill={view.skillId}
           onRecord={a => {
             recordAttempt(child.id, a)
             if (a.first_try && a.correct) {
@@ -163,9 +165,20 @@ export default function App() {
               if (a.exercise_id) setStars(s => ({ ...s, [a.exercise_id!]: (s[a.exercise_id!] || 0) + 1 }))
             }
           }}
-          onExit={() => { setView({ name: 'home' }); void loadStars() }}
+          onExit={() => { setView(view.skillSubject ? { name: 'path', subject: view.skillSubject } : { name: 'home' }); void loadStars() }}
         />
       </div>
+    )
+  } else if (view.name === 'path') {
+    screen = (
+      <Path
+        subject={view.subject}
+        childName={child.name}
+        level={child.level ?? 4}
+        attempts={attempts}
+        onPlay={skill => setView({ name: 'play', ex: skill.exercise, skillId: skill.id, skillSubject: view.subject })}
+        onExit={() => setView({ name: 'home' })}
+      />
     )
   } else if (view.name === 'daily') {
     const dailyEx: Exercise = { id: 'daily', type: 'calcul', title: 'Défi du jour', config: family.exercises[0]?.config, active: true, position: 0 } as Exercise
@@ -259,6 +272,7 @@ export default function App() {
         offline={offline}
         subject={subject}
         onSubject={setSubject}
+        onPath={s => setView({ name: 'path', subject: s })}
         onPickChild={pickChild}
         onPlay={ex => setView({ name: 'play', ex })}
         onParent={() => setView({ name: 'pin' })}
