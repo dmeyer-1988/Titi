@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Child, Exercise } from '../engine/types'
-import { TYPE_LABEL } from '../engine/types'
-import { addChild, deleteExercise, moveExercise, pendingCount, renameChild, setExerciseActive, setPin } from '../lib/store'
+import { TYPES } from '../engine/registry'
+import { addChild, deleteExercise, moveExercise, pendingCount, renameChild, setChildLevel, setExerciseActive, setPin } from '../lib/store'
 import { supabase } from '../lib/supabase'
 import { setPackPrice } from '../lib/albumStore'
 import { TeamSettings } from './TeamSettings'
@@ -21,6 +21,7 @@ interface Props {
   onPickChild: (id: string) => void
   onChanged: () => Promise<void>
   onExit: () => void
+  onPrivacy: () => void
 }
 
 type Tab = 'exercices' | 'suivi' | 'profil'
@@ -86,7 +87,7 @@ function ExerciseList({ exercises, onChanged, onEdit }: Props & { onEdit: (e: Ex
             <Thumb ex={ex} />
             <div className="ex-info">
               <b>{ex.title}</b>
-              <span className="muted">{TYPE_LABEL[ex.type]} · {describe(ex)}</span>
+              <span className="muted">{TYPES[ex.type].label} · {describe(ex)}</span>
             </div>
             <div className="ex-actions">
               <label className="switch" title={ex.active ? 'Visible' : 'Masqué'}>
@@ -148,7 +149,7 @@ function describe(ex: Exercise) {
   return `${c.onlyTens ? 'dizaines' : 'dizaines + unités'}, ${c.min}–${c.max}`
 }
 
-function Profile({ uid, email, children, child, pin, packPrice, onChanged }: Props) {
+function Profile({ uid, email, children, child, pin, packPrice, onChanged, onPrivacy }: Props) {
   const [price, setPrice] = useState(packPrice)
   const [names, setNames] = useState<Record<string, string>>(() => Object.fromEntries(children.map(c => [c.id, c.name])))
   const [newName, setNewName] = useState('')
@@ -179,6 +180,7 @@ function Profile({ uid, email, children, child, pin, packPrice, onChanged }: Pro
       <section>
         <h3>Mon compte</h3>
         <p className="muted">Connecté avec <b>{email}</b></p>
+        <button className="btn ghost small" onClick={onPrivacy}>Politique de confidentialité</button>
       </section>
 
       <section>
@@ -238,6 +240,18 @@ function Profile({ uid, email, children, child, pin, packPrice, onChanged }: Pro
           <div className="row" key={c.id}>
             <input id={`name-${c.id}`} aria-label="Prénom" value={names[c.id] ?? ''} maxLength={40} onChange={e => setNames(n => ({ ...n, [c.id]: e.target.value }))} />
             <button className="btn ghost small" disabled={!names[c.id]?.trim() || names[c.id] === c.name} onClick={() => run('kids', () => renameChild(c.id, names[c.id]), 'Prénom enregistré.')}>Renommer</button>
+          </div>
+        ))}
+        <p className="muted">Classe (HarmoS) : sert à adapter les exercices de départ et les recommandations.</p>
+        {children.map(c => (
+          <div className="row" key={'lv' + c.id}>
+            <span className="mascot-label">{c.name}</span>
+            <div className="seg" role="group" aria-label={`Classe de ${c.name}`}>
+              {Array.from({ length: 8 }, (_, i) => i + 1).map(n => (
+                <button type="button" key={n} aria-pressed={(c.level ?? 4) === n}
+                  onClick={() => (c.level ?? 4) !== n && run('kids', () => setChildLevel(c.id, n), 'Classe enregistrée.')}>{n}P</button>
+              ))}
+            </div>
           </div>
         ))}
         <p className="muted">Le nom de la loutre, à choisir avec votre enfant :</p>

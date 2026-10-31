@@ -25,7 +25,7 @@ function writeCache(uid: string, f: Family) {
 
 export async function fetchFamily(uid: string): Promise<Family> {
   const [c, e, p] = await Promise.all([
-    supabase.from('children').select('id,name,mascot_name').order('created_at'),
+    supabase.from('children').select('id,name,mascot_name,level').order('created_at'),
     supabase.from('exercises').select('id,type,title,config,active,position,updated_at').order('position').order('created_at'),
     supabase.from('profiles').select('parent_pin,pack_price').eq('user_id', uid).maybeSingle(),
   ])
@@ -43,10 +43,10 @@ export async function fetchFamily(uid: string): Promise<Family> {
 }
 
 /** Première utilisation : profil, enfant et trois exercices de départ. */
-export async function setupFamily(uid: string, childName: string, pin: string) {
+export async function setupFamily(uid: string, childName: string, pin: string, level = 4) {
   const p = await supabase.from('profiles').upsert({ user_id: uid, parent_pin: pin })
   if (p.error) throw p.error
-  const c = await supabase.from('children').insert({ name: childName.trim() })
+  const c = await supabase.from('children').insert({ name: childName.trim(), level })
   if (c.error) throw c.error
   const existing = await supabase.from('exercises').select('id', { count: 'exact', head: true })
   if (!existing.count) {
@@ -85,8 +85,12 @@ export async function moveExercise(list: Exercise[], id: string, dir: -1 | 1) {
 
 // ---------- enfants & réglages ----------
 
-export async function addChild(name: string) {
-  const r = await supabase.from('children').insert({ name: name.trim() })
+export async function addChild(name: string, level = 4) {
+  const r = await supabase.from('children').insert({ name: name.trim(), level })
+  if (r.error) throw r.error
+}
+export async function setChildLevel(id: string, level: number) {
+  const r = await supabase.from('children').update({ level }).eq('id', id)
   if (r.error) throw r.error
 }
 export async function renameChild(id: string, name: string) {
@@ -100,6 +104,9 @@ export async function setPin(uid: string, pin: string) {
 
 // ---------- réponses de l'enfant (file d'attente hors ligne) ----------
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const QUARANTINE_KEY = 'balles-quarantine'
+
 function readQueue(): Attempt[] {
   try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]') } catch { return [] }
 }
@@ -107,6 +114,9 @@ function writeQueue(q: Attempt[]) {
   try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q.slice(-2000))) } catch { /* ignore */ }
 }
 export function pendingCount() { return readQueue().length }
+export function quarantinedCount(): number {
+  try { return (JSON.parse(localStorage.getItem(QUARANTINE_KEY) || '[]') as unknown[]).length } catch { return 0 }
+}
 
 const uuid = () =>
   (crypto as Crypto & { randomUUID?: () => string }).randomUUID?.() ??
@@ -116,10 +126,24 @@ const uuid = () =>
   })
 
 export function recordAttempt(childId: string, a: AttemptDraft) {
+  // exercise_id référence la table exercises (uuid) : un id quelconque (comme les
+  // exercices factices « daily » / « revision ») ferait rejeter tout le lot par le
+  // serveur et bloquerait la file. On garde la réponse, sans la référence.
+  const exercise_id = a.exercise_id && UUID_RE.test(a.exercise_id) ? a.exercise_id : null
   const q = readQueue()
-  q.push({ ...a, id: uuid(), child_id: childId, created_at: new Date().toISOString() })
+  q.push({ ...a, exercise_id, id: uuid(), child_id: childId, created_at: new Date().toISOString() })
   writeQueue(q)
   void flushQueue()
+}
+
+function quarantine(batch: Attempt[]) {
+  // Un lot que le serveur rejette (donnée invalide) ne doit pas bloquer le reste
+  // de la file : on le met de côté, les réponses suivantes continuent de partir.
+  // Les lignes isolées restent sur l'appareil (rien n'est perdu).
+  try {
+    const kept = JSON.parse(localStorage.getItem(QUARANTINE_KEY) || '[]') as Attempt[]
+    localStorage.setItem(QUARANTINE_KEY, JSON.stringify([...kept, ...batch].slice(-2000)))
+  } catch { /* ignore */ }
 }
 
 let flushing = false
@@ -131,10 +155,16 @@ export async function flushQueue() {
   try {
     const batch = q.slice(0, 200)
     const r = await supabase.from('attempts').upsert(batch, { onConflict: 'id', ignoreDuplicates: true })
-    if (!r.error) {
+    if (!r.error && r.data) {
       const sent = new Set(batch.map(b => b.id))
       writeQueue(readQueue().filter(x => !sent.has(x.id)))
+    } else if (r.error?.code) {
+      // Le serveur a répondu et rejeté le lot (ex. uuid invalide) : réessayer
+      // à l'identique ne changera rien, on isole le lot.
+      quarantine(batch)
+      writeQueue(readQueue().filter(x => !batch.some(b => b.id === x.id)))
     }
+    // Sinon (pas de réponse du serveur) : le lot reste en tête de file.
   } finally {
     flushing = false
   }

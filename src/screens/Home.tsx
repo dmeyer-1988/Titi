@@ -1,7 +1,7 @@
 import { Pack } from '../engine/Balls'
 import { CastleArt } from '../engine/MystereQ'
 import type { Child, Exercise, Subject } from '../engine/types'
-import { SUBJECTS, TYPE_LABEL, TYPE_SUBJECT } from '../engine/types'
+import { SUBJECTS, TYPES } from '../engine/registry'
 import { Mascot } from '../mascot/Mascot'
 import type { Mood } from '../mascot/Otter'
 
@@ -168,7 +168,7 @@ function greeting(p: Props): { text: string; mood: Mood } {
 export function Home(p: Props) {
   const { children, child, exercises, stars, wallet, packPrice, weekDays, dailyDone, dailyReady, onDaily, albumOwned, albumTotal, onAlbum, team, onTeam, offline, subject, onSubject, onPickChild, onPlay, onRevision, onParent } = p
   const active = exercises.filter(e => e.active)
-  const bySubject = (s: Subject) => active.filter(e => TYPE_SUBJECT[e.type] === s)
+  const bySubject = (s: Subject) => active.filter(e => TYPES[e.type].subject === s)
   const starsFor = (list: Exercise[]) => list.reduce((a, e) => a + (stars[e.id] || 0), 0)
   const current = subject ? SUBJECTS.find(s => s.id === subject)! : null
   const games = subject ? bySubject(subject) : []
@@ -211,7 +211,7 @@ export function Home(p: Props) {
                 <Thumb ex={ex} />
                 <span className="game-title">{ex.title}</span>
                 <span className="game-meta">
-                  <span className="type">{TYPE_LABEL[ex.type]}</span>
+                  <span className="type">{TYPES[ex.type].label}</span>
                   <span className="mini-stars">{starIcon}{stars[ex.id] || 0}</span>
                 </span>
               </button>

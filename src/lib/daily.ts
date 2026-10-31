@@ -1,7 +1,8 @@
 import { supabase } from './supabase'
 import { makeRound } from '../engine/generate'
 import type { RoundItem } from '../engine/Runner'
-import { TYPE_SUBJECT, type Attempt, type Exercise, type Subject } from '../engine/types'
+import { TYPES } from '../engine/registry'
+import type { Attempt, Exercise, Subject } from '../engine/types'
 
 export const DAILY_SIZE = 6
 export const DAILY_BONUS = 2
@@ -66,7 +67,7 @@ export async function setMascotName(childId: string, name: string) {
  */
 export function buildRevision(exercises: Exercise[], subject: Subject): RoundItem[] {
   const pool = exercises
-    .filter(e => e.active && TYPE_SUBJECT[e.type] === subject && (e.config as { revision?: boolean }).revision)
+    .filter(e => e.active && TYPES[e.type].subject === subject && (e.config as { revision?: boolean }).revision)
     .sort((a, b) => a.position - b.position)
   return pool.flatMap(ex => makeRound(ex).slice(0, 2).map(q => ({ ex, q })))
 }

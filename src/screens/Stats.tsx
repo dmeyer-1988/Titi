@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Attempt, Child, Exercise } from '../engine/types'
-import { TYPE_LABEL } from '../engine/types'
+import { TYPES } from '../engine/registry'
 import { fetchAttempts } from '../lib/store'
 
 const fmtDay = new Intl.DateTimeFormat('fr-CH', { weekday: 'short', day: 'numeric', month: 'short' })
@@ -80,7 +80,7 @@ export function Stats({ child, children, exercises, onPickChild }: {
                   return (
                     <li key={id}>
                       <div className="ex-line">
-                        <span className="name">{title(id === 'deleted' ? null : id)}{ex && <span className="type"> · {TYPE_LABEL[ex.type]}</span>}</span>
+                        <span className="name">{title(id === 'deleted' ? null : id)}{ex && <span className="type"> · {TYPES[ex.type].label}</span>}</span>
                         <span className="num">{pct}% · {r.n} q.</span>
                       </div>
                       <div className="meter" role="meter" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${pct}% justes du premier coup`}>

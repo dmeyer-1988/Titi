@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Runner } from '../engine/Runner'
-import { defaultConfig, TYPE_HELP, TYPE_LABEL, type AlphabetConfig, type AlphaSkill, type SonConfig, type CalculConfig, type PaquetsConfig, type NoeudsConfig, type NoeudSkill, type ChateauxConfig, type MystereConfig, type CapaciteConfig, type CollectionConfig, type Exercise, type ExerciseType, type SuiteConfig, type TableConfig, SKILL_LABEL, TYPE_SUBJECT, SUBJECTS } from '../engine/types'
+import { type AlphabetConfig, type AlphaSkill, type SonConfig, type CalculConfig, type PaquetsConfig, type NoeudsConfig, type NoeudSkill, type ChateauxConfig, type MystereConfig, type CapaciteConfig, type CollectionConfig, type Exercise, type ExerciseType, type SuiteConfig, type TableConfig, SKILL_LABEL } from '../engine/types'
+import { SUBJECTS, TYPES } from '../engine/registry'
 import { saveExercise } from '../lib/store'
 import { hasSon, isTrap } from '../engine/sons'
 import { calcTitle } from '../engine/calcul'
@@ -69,7 +70,7 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
   initial?: Exercise; nextPosition: number; onClose: () => void; onSaved: () => void
 }) {
   const [type, setType] = useState<ExerciseType>(initial?.type ?? 'entoure')
-  const [config, setConfig] = useState<AnyConfig>(initial?.config ?? defaultConfig('entoure'))
+  const [config, setConfig] = useState<AnyConfig>(initial?.config ?? TYPES.entoure.defaultConfig())
   const [title, setTitle] = useState(initial?.title ?? '')
   const [titleTouched, setTitleTouched] = useState(Boolean(initial))
   const [testing, setTesting] = useState(false)
@@ -78,11 +79,13 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
   const [focusText, setFocusText] = useState<string | null>(null)
 
   const shownTitle = titleTouched ? title : autoTitle(type, config)
-  const draft: Exercise = { id: initial?.id ?? 'test', type, title: shownTitle || TYPE_LABEL[type], config, active: initial?.active ?? true, position: initial?.position ?? nextPosition }
+  // L'éditeur mélange type et config librement (brouillon) ; la cohérence est
+  // garantie à l'enregistrement, quand le type ne change plus.
+  const draft = { id: initial?.id ?? 'test', type, title: shownTitle || TYPES[type].label, config, active: initial?.active ?? true, position: initial?.position ?? nextPosition } as Exercise
 
   const changeType = (t: ExerciseType) => {
     setType(t)
-    if (family(t) !== family(type)) setConfig(defaultConfig(t))
+    if (family(t) !== family(type)) setConfig(TYPES[t].defaultConfig())
   }
   const upd = (patch: object) => setConfig(c => ({ ...c, ...patch }) as AnyConfig)
 
@@ -109,16 +112,16 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
         <div key={sub.id}>
           <div className="types-label">{sub.label}</div>
           <div className="types">
-            {(['entoure', 'combien', 'paquets', 'suite', 'table', 'calcul', 'noeuds', 'mystere', 'chateaux', 'capacite', 'alphabet', 'son'] as ExerciseType[]).filter(t => TYPE_SUBJECT[t] === sub.id).map(t => (
+            {(['entoure', 'combien', 'paquets', 'suite', 'table', 'calcul', 'noeuds', 'mystere', 'chateaux', 'capacite', 'alphabet', 'son'] as ExerciseType[]).filter(t => TYPES[t].subject === sub.id).map(t => (
               <button key={t} className={'type-card' + (t === type ? ' on' : '')} onClick={() => changeType(t)} aria-pressed={t === type}>
-                <Thumb ex={{ ...draft, type: t, config: family(t) === family(type) ? config : defaultConfig(t) }} />
-                <b>{TYPE_LABEL[t]}</b>
+                <Thumb ex={{ ...draft, type: t, config: family(t) === family(type) ? config : TYPES[t].defaultConfig() } as Exercise} />
+                <b>{TYPES[t].label}</b>
               </button>
             ))}
           </div>
         </div>
       ))}
-      <p className="help">{TYPE_HELP[type]}</p>
+      <p className="help">{TYPES[type].help}</p>
 
       <div className="form-grid">
         {type === 'noeuds' ? (

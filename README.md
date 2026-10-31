@@ -24,8 +24,8 @@ Les balles sont groupées en paquets de 10 (4-2-4) comme sur les fiches. Après 
 ### 1. Supabase
 
 1. Créez un projet sur supabase.com.
-2. **SQL Editor** → collez `supabase/migrations/20260926000000_init.sql` → Run.
-   (ou `supabase link` puis `supabase db push`)
+2. **SQL Editor** → collez les fichiers de `supabase/migrations/` dans l'ordre chronologique → Run.
+   (ou `supabase link` puis `supabase db push`, qui applique tout l'historique)
 3. **Authentication → Sign In / Providers → Email** : laissez l'e-mail activé.
 4. **Authentication → Email Templates → Magic Link** : l'app se connecte avec un **code à 6 chiffres** (un lien magique s'ouvrirait dans Safari et pas dans l'app installée). Remplacez le corps du modèle par exemple par :
 

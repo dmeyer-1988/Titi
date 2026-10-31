@@ -20,7 +20,7 @@ import { calcAnswer, opSign } from './calcul'
 import { isTrap } from './sons'
 import { LETTER_NAME } from './alphabet'
 import { say, sounds } from './audio'
-import type { AlphabetConfig, Exercise, SonConfig } from './types'
+import type { Exercise } from './types'
 import { words } from './words'
 import { Mascot } from '../mascot/Mascot'
 import { Celebrate, Fireworks } from '../mascot/Fireworks'
@@ -61,7 +61,7 @@ export function Runner({ exercise, items, onFinished, childName, test, onRecord,
   const [phase, setPhase] = useState<'play' | 'solved' | 'end'>('play')
   const [msg, setMsg] = useState<{ kind: 'ok' | 'no'; title: string; sub?: string } | null>(null)
   // Règle affichée avant la partie (son on/om) ou à la demande.
-  const [rule, setRule] = useState(!items && exercise.type === 'son' && (exercise.config as SonConfig).showRule !== false)
+  const [rule, setRule] = useState(!items && exercise.type === 'son' && exercise.config.showRule !== false)
   // tries = erreurs sur la case en cours ; misses = erreurs sur toute la question (pour l'étoile)
   const tries = useRef(0)
   const misses = useRef(0)
@@ -71,7 +71,7 @@ export function Runner({ exercise, items, onFinished, childName, test, onRecord,
   const q = round[idx]?.q
   const ex = round[idx]?.ex ?? exercise
   const name = childName?.trim()
-  const caps = ex.type === 'alphabet' && Boolean((ex.config as AlphabetConfig).capitals)
+  const caps = ex.type === 'alphabet' && ex.config.capitals
   const L = (l: string) => (caps ? l.toUpperCase() : l)
 
   const prompt = useMemo(() => {

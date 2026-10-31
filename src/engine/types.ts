@@ -1,29 +1,9 @@
 // Types partagés entre le moteur, la base et les écrans.
 
-export type ExerciseType = 'entoure' | 'combien' | 'paquets' | 'suite' | 'table' | 'calcul' | 'noeuds' | 'chateaux' | 'mystere' | 'capacite' | 'alphabet' | 'son'
 
-/** Matières affichées sur l'accueil. La matière d'un exercice découle de son type. */
+
+/** Matières affichées sur l'accueil. La matière d'un exercice découle de son type (voir registry.ts). */
 export type Subject = 'maths' | 'francais'
-
-export const SUBJECTS: { id: Subject; label: string; tagline: string }[] = [
-  { id: 'maths', label: 'Maths', tagline: 'Nombres et opérations' },
-  { id: 'francais', label: 'Français', tagline: 'Lire et écrire' },
-]
-
-export const TYPE_SUBJECT: Record<ExerciseType, Subject> = {
-  entoure: 'maths',
-  combien: 'maths',
-  paquets: 'maths',
-  suite: 'maths',
-  table: 'maths',
-  calcul: 'maths',
-  noeuds: 'maths',
-  chateaux: 'maths',
-  mystere: 'maths',
-  capacite: 'maths',
-  alphabet: 'francais',
-  son: 'francais',
-}
 
 /** "Entoure la collection de N balles" et "Combien de balles ?" */
 export interface CollectionConfig {
@@ -153,22 +133,45 @@ export interface PaquetsConfig {
   questions: number
 }
 
-export type ExerciseConfig = NoeudsConfig | ChateauxConfig | MystereConfig | CapaciteConfig | PaquetsConfig | CollectionConfig | SuiteConfig | TableConfig | CalculConfig | AlphabetConfig | SonConfig
+/** Associe chaque type à sa config : avec Exercise, la paire (type, config) est garantie. */
+export interface ConfigFor {
+  entoure: CollectionConfig
+  combien: CollectionConfig
+  paquets: PaquetsConfig
+  suite: SuiteConfig
+  table: TableConfig
+  calcul: CalculConfig
+  noeuds: NoeudsConfig
+  chateaux: ChateauxConfig
+  mystere: MystereConfig
+  capacite: CapaciteConfig
+  alphabet: AlphabetConfig
+  son: SonConfig
+}
 
-export interface Exercise {
+export type ExerciseType = keyof ConfigFor
+/** Config sans garantie sur le type (ce qu'on lit dans la base ou dans l'éditeur). */
+export type ExerciseConfig = ConfigFor[ExerciseType]
+
+interface ExerciseBase {
   id: string
-  type: ExerciseType
   title: string
-  config: ExerciseConfig
   active: boolean
   position: number
   updated_at?: string
 }
 
+/** Exercice dont la config correspond au type. */
+export type ExerciseOf<K extends ExerciseType> = ExerciseBase & { type: K; config: ConfigFor[K] }
+/** Exercice tel qu'il circule dans l'app : le type dit quelle config s'y trouve. */
+export type Exercise = { [K in ExerciseType]: ExerciseOf<K> }[ExerciseType]
+
 export interface Child {
   id: string
   name: string
   mascot_name?: string
+  /** année HarmoS (1P–8P) */
+  level?: number
 }
 
 export interface Attempt {
@@ -184,49 +187,7 @@ export interface Attempt {
   created_at: string
 }
 
-export const TYPE_LABEL: Record<ExerciseType, string> = {
-  entoure: 'Entoure',
-  combien: 'Combien ?',
-  paquets: 'Paquets de 10',
-  suite: 'Complète la suite',
-  table: "Tableau d'addition",
-  calcul: 'Calcul',
-  noeuds: 'Les nœuds',
-  chateaux: 'Tours de cubes',
-  mystere: 'Le château mystère',
-  capacite: 'Qui contient le plus ?',
-  alphabet: "L'alphabet",
-  son: 'Le son on / om',
-}
-
-export const TYPE_HELP: Record<ExerciseType, string> = {
-  entoure: "L'enfant dessine un rond autour de la collection qui a le bon nombre de balles.",
-  combien: "L'enfant compte une collection (paquets de 10 et balles seules) et choisit le bon nombre.",
-  paquets: "Des balles en vrac : l'enfant entoure au doigt des paquets de 10, puis touche des balles seules pour obtenir le nombre demandé (ex. 34 = 3 paquets et 4 balles).",
-  suite: "L'enfant complète les cases vides d'une suite de nombres avec un clavier.",
-  table: "L'enfant complète les cases vides d'un tableau d'addition. En mode mixte, il retrouve aussi des nombres des en-têtes à partir d'une somme.",
-  calcul: "Additions et soustractions du type 34 + 3 ou 47 − 5. Choisissez les nombres à ajouter ou enlever (+0 à +10), la taille du grand nombre, et si l'enfant cherche le résultat ou le nombre manquant (34 + ? = 37).",
-  noeuds: "Un quadrillage avec des colonnes (A, B, C…) et des lignes (1, 2, 3…). L'enfant lit sur quel nœud se trouve un objet, place un objet sur un nœud, ou le déplace (« 2 nœuds à droite »).",
-  chateaux: "Stratégie « ajustements d'essais successifs » : l'enfant construit des tours de cubes qui respectent deux conditions (ex. 15 cubes en tout, la tour de droite a 3 cubes de plus). Il essaie, vérifie, puis ajuste.",
-  mystere: "Jeu des 36 cartes château (3 couleurs × 3 tours × 2 portes × 2 drapeaux). L'enfant propose un château, on lui dit combien de critères sont corrects sans dire lesquels, et il ajuste un seul critère à la fois jusqu'à trouver le château mystère (ajustements d'essais successifs).",
-  capacite: "Comparaison directe : on remplit un récipient et on le verse dans l'autre. S'il déborde, le premier contient plus ; s'il n'est pas plein, il contient moins. Les récipients ont des formes trompeuses (haut et fin, bas et large).",
-  alphabet: "Lettre qui manque dans l'alphabet, lettre avant / après / entre, trouver les voyelles, ranger des mots selon l'ordre alphabétique (1re lettre). Les questions sont tirées au hasard parmi les parties choisies.",
-  son: "La règle (m devant m, b, p) s'affiche au début, puis l'enfant choisit « on » ou « om » pour compléter chaque mot. Les mots à travailler reviennent à chaque partie ; les mots pièges (bonbon, nom, prénom…) sont repérés automatiquement.",
-}
-
-export function defaultConfig(type: ExerciseType): ExerciseConfig {
-  if (type === 'suite') return { min: 10, max: 100, step: 10, length: 6, blanks: 1, direction: 'up', questions: 10 }
-  if (type === 'table') return { min: 2, max: 9, size: 4, mode: 'sommes', questions: 2 }
-  if (type === 'noeuds') return { size: 5, skills: ['lire', 'placer', 'bouger'], questions: 8 }
-  if (type === 'chateaux') return { towers: 2, maxTotal: 20, questions: 5 }
-  if (type === 'mystere') return { aide: true, strict: true, questions: 3 }
-  if (type === 'capacite') return { compare: 'mix', questions: 6 }
-  if (type === 'paquets') return { min: 11, max: 49, extra: true, questions: 5 }
-  if (type === 'calcul') return { op: '+', steps: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], digits: 2, find: 'resultat', questions: 10 }
-  if (type === 'son') return { focus: ['ombre', 'tomber', 'prénom', 'nom', 'ballon', 'pompon', 'bonbon'], extra: true, showRule: true, questions: 12 }
-  if (type === 'alphabet') return { skills: ['suite', 'position', 'voyelles', 'ranger'], words: 3, capitals: false, questions: 12 }
-  return { min: 10, max: 90, onlyTens: true, questions: 10 }
-}
+// Libellés, aides et config par défaut : voir le registre src/engine/registry.ts (TYPES).
 
 export const ALPHABET_SEED: Omit<Exercise, 'id'>[] = [
   { type: 'alphabet', title: 'Entraînement au test', config: { skills: ['suite', 'position', 'voyelles', 'ranger'], words: 3, capitals: false, questions: 12 }, active: true, position: 0 },

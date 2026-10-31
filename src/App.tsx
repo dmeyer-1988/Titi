@@ -10,6 +10,7 @@ import { Login } from './screens/Login'
 import { Parent } from './screens/Parent'
 import { PinGate } from './screens/PinGate'
 import { Setup } from './screens/Setup'
+import { Privacy } from './screens/Privacy'
 import { Album } from './album/Album'
 import { STICKERS } from './album/catalog'
 import { fetchAlbum } from './lib/albumStore'
@@ -17,7 +18,7 @@ import { getMembership, type Membership } from './lib/teamStore'
 import { Team } from './screens/Team'
 import { buildDaily, buildRevision, completeDaily, fetchDaily } from './lib/daily'
 
-type View = { name: 'home' } | { name: 'play'; ex: Exercise } | { name: 'pin' } | { name: 'parent' } | { name: 'album' } | { name: 'team' } | { name: 'daily'; items: RoundItem[] } | { name: 'revision'; items: RoundItem[] }
+type View = { name: 'home' } | { name: 'play'; ex: Exercise } | { name: 'pin' } | { name: 'parent' } | { name: 'album' } | { name: 'team' } | { name: 'daily'; items: RoundItem[] } | { name: 'revision'; items: RoundItem[] } | { name: 'privacy' }
 
 const CHILD_KEY = 'balles-child'
 
@@ -127,8 +128,10 @@ export default function App() {
     )
   } else if (session === undefined) {
     screen = <div className="splash"><svg className="ball big-ball" aria-hidden="true"><use href="#ball" /></svg></div>
+  } else if (view.name === 'privacy') {
+    screen = <Privacy onExit={() => setView({ name: 'home' })} />
   } else if (!session) {
-    screen = <Login />
+    screen = <Login onPrivacy={() => setView({ name: 'privacy' })} />
   } else if (!family) {
     screen = loadErr
       ? <div className="sheet narrow"><h2>Pas de connexion</h2><p>Connectez l'iPad à Internet pour la première ouverture. Ensuite le jeu marche aussi hors ligne.</p><button className="btn" onClick={refresh}>Réessayer</button></div>
@@ -218,6 +221,7 @@ export default function App() {
         onPickChild={pickChild}
         onChanged={async () => { await refresh(); void loadStars() }}
         onExit={() => { setView({ name: 'home' }); void loadStars() }}
+        onPrivacy={() => setView({ name: 'privacy' })}
       />
     )
   } else {

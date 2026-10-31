@@ -93,6 +93,9 @@ h3 { font-family: var(--display); font-weight: 600; font-size: 22px; margin: 28p
 .btn.ghost.small { box-shadow: 0 0 0 2px var(--rule) inset; }
 .btn.danger { background: var(--no); box-shadow: none; }
 .text-link { border: 0; background: none; color: var(--court); text-decoration: underline; cursor: pointer; font-size: 15px; margin-top: 18px; }
+.sheet ul { margin: 4px 0 18px; padding-left: 24px; }
+.sheet li { margin: 6px 0; line-height: 1.45; }
+.sheet h2 { margin-top: 26px; }
 :is(.btn, .text-link, .seg button, .game, .answer, .key, .icon-btn, .back, .parent-link, .type-card, .icon-sm, .stepper button):focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
 
 .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px; }
