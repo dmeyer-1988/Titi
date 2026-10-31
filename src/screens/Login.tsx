@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 /** Connexion du parent par e-mail + code à 6 chiffres (fonctionne dans l'app installée). */
-export function Login({ onPrivacy }: { onPrivacy?: () => void }) {
+export function Login({ onPrivacy, onSignup }: { onPrivacy?: () => void; onSignup?: () => void }) {
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
   const [step, setStep] = useState<'email' | 'code' | 'password'>('email')
@@ -88,6 +88,7 @@ export function Login({ onPrivacy }: { onPrivacy?: () => void }) {
         </form>
       )}
       {err && <p className="error" role="alert">{err}</p>}
+      {onSignup && <button type="button" className="text-link" onClick={onSignup}>Pas encore de compte ? Créer un compte</button>}
       {onPrivacy && <button type="button" className="text-link" onClick={onPrivacy}>Politique de confidentialité</button>}
     </div>
   )

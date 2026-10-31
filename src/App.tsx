@@ -7,6 +7,8 @@ import { fetchAttempts, fetchFamily, flushQueue, readCache, recordAttempt, type 
 import { configured, supabase } from './lib/supabase'
 import { Home } from './screens/Home'
 import { Login } from './screens/Login'
+import { Signup } from './screens/Signup'
+import { Landing } from './screens/Landing'
 import { Parent } from './screens/Parent'
 import { PinGate } from './screens/PinGate'
 import { Setup } from './screens/Setup'
@@ -18,7 +20,7 @@ import { getMembership, type Membership } from './lib/teamStore'
 import { Team } from './screens/Team'
 import { buildDaily, buildRevision, completeDaily, fetchDaily } from './lib/daily'
 
-type View = { name: 'home' } | { name: 'play'; ex: Exercise } | { name: 'pin' } | { name: 'parent' } | { name: 'album' } | { name: 'team' } | { name: 'daily'; items: RoundItem[] } | { name: 'revision'; items: RoundItem[] } | { name: 'privacy' }
+type View = { name: 'home' } | { name: 'play'; ex: Exercise } | { name: 'pin' } | { name: 'parent' } | { name: 'album' } | { name: 'team' } | { name: 'daily'; items: RoundItem[] } | { name: 'revision'; items: RoundItem[] } | { name: 'privacy' } | { name: 'login' } | { name: 'signup' }
 
 const CHILD_KEY = 'balles-child'
 
@@ -131,7 +133,17 @@ export default function App() {
   } else if (view.name === 'privacy') {
     screen = <Privacy onExit={() => setView({ name: 'home' })} />
   } else if (!session) {
-    screen = <Login onPrivacy={() => setView({ name: 'privacy' })} />
+    screen = view.name === 'login' ? (
+      <Login onPrivacy={() => setView({ name: 'privacy' })} onSignup={() => setView({ name: 'signup' })} />
+    ) : view.name === 'signup' ? (
+      <Signup onPrivacy={() => setView({ name: 'privacy' })} onLogin={() => setView({ name: 'login' })} />
+    ) : (
+      <Landing
+        onLogin={() => setView({ name: 'login' })}
+        onSignup={() => setView({ name: 'signup' })}
+        onPrivacy={() => setView({ name: 'privacy' })}
+      />
+    )
   } else if (!family) {
     screen = loadErr
       ? <div className="sheet narrow"><h2>Pas de connexion</h2><p>Connectez l'iPad à Internet pour la première ouverture. Ensuite le jeu marche aussi hors ligne.</p><button className="btn" onClick={refresh}>Réessayer</button></div>
