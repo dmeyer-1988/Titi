@@ -1087,3 +1087,23 @@ button.sticker { cursor: pointer; }
   .dchoice { min-width: 76px; min-height: 64px; font-size: 30px; }
 }
 .dword .miss { color: var(--no); font-weight: 700; padding: 0 1px; }
+/* Ardoise */
+.slate { width: 100%; max-width: 760px; height: 230px; position: relative; border: 3px solid var(--court); border-radius: 18px; overflow: hidden; touch-action: none;
+  /* lignes d'écolier : ligne d'en haut, ligne du milieu, ligne d'écriture, ligne du bas */
+  background:
+    linear-gradient(transparent calc(22% - 1px), #D9E3EE calc(22% - 1px), #D9E3EE 22%, transparent 22%),
+    linear-gradient(transparent calc(44% - 1px), #C3D3E3 calc(44% - 1px), #C3D3E3 44%, transparent 44%),
+    linear-gradient(transparent calc(66% - 2px), #8FAFCF calc(66% - 2px), #8FAFCF 66%, transparent 66%),
+    linear-gradient(transparent calc(88% - 1px), #D9E3EE calc(88% - 1px), #D9E3EE 88%, transparent 88%),
+    #fff; }
+.slate.small { max-width: 420px; height: 170px; }
+.slate.off { border-color: var(--rule); }
+.slate canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+.dmode { display: inline-flex; background: var(--tint); border-radius: 999px; padding: 4px; gap: 4px; align-self: flex-end; }
+.dmode button { border: 0; background: transparent; border-radius: 999px; padding: 6px 14px; font-size: 15px; color: var(--ink-soft); cursor: pointer; }
+.dmode button[aria-pressed="true"] { background: #fff; color: var(--court); font-weight: 700; box-shadow: 0 1px 3px rgb(0 0 0 / .12); }
+.dmodel { display: flex; align-items: center; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.dmodel .dl { font-weight: 700; color: var(--ink-soft); }
+.dself { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.btn.ok-btn { background: var(--ok); box-shadow: 0 5px 0 #226B40; }
+@media (max-width: 640px) { .slate { height: 180px; } .slate.small { height: 140px; } }

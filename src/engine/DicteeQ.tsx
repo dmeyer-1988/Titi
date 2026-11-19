@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { QProps } from './EntoureQ'
 import { diffLetters, findIn, norm, silentEnd, speech, tips, type DicteeEntry, type DicteeQuestion } from './dictee'
 import { say, sounds } from './audio'
+import { Slate, type SlateHandle } from './Slate'
 
 const Speaker = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" /><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" /></svg>
@@ -61,13 +62,22 @@ function Keyboard({ onKey, onBack, onOk, okDisabled }: { onKey: (k: string) => v
   )
 }
 
-/** Écrire le mot (dictée ou regarde-cache-écris), choisir le son, ou choisir la fin du mot. */
-export function DicteeQ({ q, list, onAttempt, onSolved }: QProps<DicteeQuestion> & { list: DicteeEntry[] }) {
+// L'enfant peut passer du clavier à l'ardoise ; on garde son choix pendant la session.
+let preferSlate: boolean | null = null
+
+type Phase = 'look' | 'write' | 'compare' | 'fix' | 'done'
+
+/** Écrire le mot (dictée ou regarde-cache-écris), trouver le son, ou choisir la fin du mot. */
+export function DicteeQ({ q, list, ardoise, onAttempt, onSolved }: QProps<DicteeQuestion> & { list: DicteeEntry[]; ardoise?: boolean }) {
   const e = q.entry
-  const [phase, setPhase] = useState<'look' | 'write' | 'fix' | 'done'>(q.mode === 'memo' ? 'look' : 'write')
+  const [phase, setPhase] = useState<Phase>(q.mode === 'memo' ? 'look' : 'write')
   const [text, setText] = useState('')
   const [lastWrong, setLastWrong] = useState('')
   const [picked, setPicked] = useState<string[]>([])
+  const [slate, setSlateMode] = useState<boolean>(preferSlate ?? Boolean(ardoise))
+  const [hasInk, setHasInk] = useState(false)
+  const pad = useRef<SlateHandle>(null)
+  const setSlate = (v: boolean) => { preferSlate = v; setSlateMode(v); sounds.tick(4) }
 
   useEffect(() => {
     if (phase !== 'done') return
@@ -92,13 +102,42 @@ export function DicteeQ({ q, list, onAttempt, onSolved }: QProps<DicteeQuestion>
     else setPicked(p => [...p, v])
   }
 
-  const tipList = tips(e, list)
+  // Ardoise : l'enfant compare lui-même son écriture avec le modèle.
+  const expected = q.mode === 'son' ? q.blank : e.text
+  const selfCheck = (ok: boolean) => {
+    onAttempt(ok ? 'ardoise : pareil' : 'ardoise : erreur', expected, ok)
+    if (ok) setPhase('done')
+    else setPhase('fix')
+  }
+  const rewrite = () => { pad.current?.clear(); setHasInk(false); setPhase('write'); sounds.tick(5) }
 
-  // ---------- Le bon son / La lettre de la fin ----------
-  if (q.mode === 'son' || q.mode === 'fin') {
+  const tipList = tips(e, list)
+  const Tips = () => tipList.length > 0 ? <ul className="dtips">{tipList.map(t => <li key={t}>{t}</li>)}</ul> : null
+
+  const toggle = (q.mode === 'ecrire' || q.mode === 'memo' || q.mode === 'son') && (phase === 'write') && (
+    <div className="dmode" role="group" aria-label="Écrire avec">
+      <button type="button" aria-pressed={!slate} onClick={() => setSlate(false)}>⌨️ Clavier</button>
+      <button type="button" aria-pressed={slate} onClick={() => setSlate(true)}>✏️ Ardoise</button>
+    </div>
+  )
+
+  const compareButtons = (
+    <div className="dself">
+      <p className="dsmall">Compare lettre par lettre avec ce que tu as écrit.</p>
+      <div className="row center">
+        <button className="btn ok-btn" onClick={() => selfCheck(true)}>✅ C'est pareil</button>
+        <button className="btn ghost" onClick={() => selfCheck(false)}>❌ Je me suis trompé</button>
+      </div>
+    </div>
+  )
+
+  // ---------- La lettre de la fin (et le son, au clavier) ----------
+  if (q.mode === 'fin' || (q.mode === 'son' && !slate)) {
     const done = phase === 'done'
+    const right = q.mode === 'son' ? q.blank : q.ending
     return (
       <div className="dictee-q">
+        {toggle}
         <div className="dword-row">
           <button className="icon-btn" onClick={() => say(speech(e))} aria-label="Écouter"><Speaker /></button>
           <div className={'dword' + (done ? ' ok' : '')}>
@@ -109,21 +148,58 @@ export function DicteeQ({ q, list, onAttempt, onSolved }: QProps<DicteeQuestion>
         </div>
         <div className="dchoices">
           {q.options.map(o => (
-            <button key={o || 'rien'} className={'dchoice' + (picked.includes(o) ? ' wrong' : '') + (done && o === (q.mode === 'son' ? q.blank : q.ending) ? ' right' : '')}
+            <button key={o || 'rien'} className={'dchoice' + (picked.includes(o) ? ' wrong' : '') + (done && o === right ? ' right' : '')}
               disabled={done || picked.includes(o)} onClick={() => choose(o)}>
               {o === '' ? <span className="rien">rien</span> : o}
             </button>
           ))}
         </div>
-        {done && tipList.length > 0 && <ul className="dtips">{tipList.map(t => <li key={t}>{t}</li>)}</ul>}
+        {done && <Tips />}
       </div>
     )
   }
 
-  // ---------- Écrire ----------
-  return (
-    <div className="dictee-q">
-      {phase === 'look' ? (
+  // ---------- Le son, à l'ardoise : on écrit la syllabe qui manque ----------
+  if (q.mode === 'son') {
+    const shown = phase === 'compare' || phase === 'fix' || phase === 'done'
+    return (
+      <div className="dictee-q">
+        {toggle}
+        <div className="dword-row">
+          <button className="icon-btn" onClick={() => say(speech(e))} aria-label="Écouter"><Speaker /></button>
+          <div className={'dword' + (phase === 'done' ? ' ok' : '')}>
+            {shown ? <Highlight text={e.text} /> : <>{q.before}<span className="dgap">?</span>{q.after}</>}
+          </div>
+        </div>
+        {phase !== 'fix' && <p className="dsmall">{phase === 'write' ? 'Écris le son qui manque sur l’ardoise.' : 'Ce que tu as écrit :'}</p>}
+        <Slate ref={pad} small disabled={phase !== 'write'} onInk={setHasInk} />
+        {phase === 'write' && (
+          <div className="row center">
+            <button className="btn ghost small" onClick={() => pad.current?.clear()} disabled={!hasInk}>Effacer</button>
+            <button className="btn" onClick={() => { setPhase('compare'); sounds.tick(6) }} disabled={!hasInk}>J'ai fini</button>
+          </div>
+        )}
+        {phase === 'compare' && (
+          <>
+            <div className="dmodel"><span className="dl">Le son à écrire</span><span className="dword small"><b className="hl-son">{q.blank}</b></span></div>
+            {compareButtons}
+          </>
+        )}
+        {phase === 'fix' && (
+          <>
+            <Tips />
+            <div className="row center"><button className="btn" onClick={rewrite}>Je réécris le son</button></div>
+          </>
+        )}
+        {phase === 'done' && <Tips />}
+      </div>
+    )
+  }
+
+  // ---------- Regarder le mot (regarde, cache, écris) ----------
+  if (phase === 'look') {
+    return (
+      <div className="dictee-q">
         <div className="dlook">
           <div className="dword big"><Highlight text={e.text} /></div>
           <p className="dsmall">Regarde bien chaque lettre. Le <b className="hl-son">son</b> en bleu, la <b className="hl-fin">lettre muette</b> en orange.</p>
@@ -132,7 +208,48 @@ export function DicteeQ({ q, list, onAttempt, onSolved }: QProps<DicteeQuestion>
             <button className="btn" onClick={() => setPhase('write')}>Je cache et j'écris !</button>
           </div>
         </div>
-      ) : phase === 'fix' ? (
+      </div>
+    )
+  }
+
+  // ---------- Écrire à l'ardoise ----------
+  if (slate) {
+    return (
+      <div className="dictee-q">
+        {toggle}
+        {phase === 'write' && (
+          <div className="dword-row">
+            <button className="icon-btn" onClick={() => say(speech(e))} aria-label="Écouter le mot"><Speaker /></button>
+            <span className="dsmall">Écris le mot sur l'ardoise avec ton stylet ou ton doigt.</span>
+          </div>
+        )}
+        <Slate ref={pad} disabled={phase !== 'write'} onInk={setHasInk} />
+        {phase === 'write' && (
+          <div className="row center">
+            <button className="btn ghost small" onClick={() => pad.current?.clear()} disabled={!hasInk}>Effacer</button>
+            <button className="btn" onClick={() => { setPhase('compare'); sounds.tick(6) }} disabled={!hasInk}>J'ai fini</button>
+          </div>
+        )}
+        {(phase === 'compare' || phase === 'fix' || phase === 'done') && (
+          <div className="dmodel"><span className="dl">Le modèle</span><span className={'dword' + (phase === 'done' ? ' ok' : '')}><Highlight text={e.text} /></span></div>
+        )}
+        {phase === 'compare' && compareButtons}
+        {phase === 'fix' && (
+          <>
+            <Tips />
+            <div className="row center"><button className="btn" onClick={rewrite}>Je l'ai bien regardé, je réécris !</button></div>
+          </>
+        )}
+        {phase === 'done' && <Tips />}
+      </div>
+    )
+  }
+
+  // ---------- Écrire au clavier ----------
+  return (
+    <div className="dictee-q">
+      {toggle}
+      {phase === 'fix' ? (
         <div className="dfix">
           <div className="dline"><span className="dl">Tu as écrit</span>
             <span className="dword small">{lastWrong ? diffLetters(lastWrong, e.text).map((d, i) => <span key={i} className={d.miss ? 'miss' : d.ok ? '' : 'bad'}>{d.ch}</span>) : <i className="dsmall">(rien)</i>}</span>
@@ -140,7 +257,7 @@ export function DicteeQ({ q, list, onAttempt, onSolved }: QProps<DicteeQuestion>
           <div className="dline"><span className="dl">Il fallait</span>
             <span className="dword"><Highlight text={e.text} /></span>
           </div>
-          {tipList.length > 0 && <ul className="dtips">{tipList.map(t => <li key={t}>{t}</li>)}</ul>}
+          <Tips />
           <div className="row center">
             <button className="btn" onClick={() => { setPhase('write'); sounds.tick(5) }}>Je l'ai bien regardé, je réécris !</button>
           </div>
@@ -154,7 +271,7 @@ export function DicteeQ({ q, list, onAttempt, onSolved }: QProps<DicteeQuestion>
             </div>
           </div>
           {phase === 'done'
-            ? tipList.length > 0 && <ul className="dtips">{tipList.map(t => <li key={t}>{t}</li>)}</ul>
+            ? <Tips />
             : <Keyboard onKey={k => setText(t => (t + k).slice(0, 60))} onBack={() => setText(t => t.slice(0, -1))} onOk={check} okDisabled={!text.trim()} />}
         </>
       )}

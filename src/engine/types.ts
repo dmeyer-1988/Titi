@@ -139,6 +139,8 @@ export interface DicteeConfig {
   /** un mot ou une phrase par ligne ; « fin | un fil très fin » = le mot, puis la phrase dite pour l'aider */
   list: string[]
   modes: DicteeMode[]
+  /** écrire sur l'ardoise (stylet ou doigt) plutôt qu'au clavier ; l'enfant peut changer pendant le jeu */
+  ardoise?: boolean
   revision?: boolean
   questions: number
 }

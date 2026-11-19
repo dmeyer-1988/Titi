@@ -140,6 +140,8 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
                 return <small>{l.length} mot{l.length > 1 ? 's' : ''} · {son} pour « le bon son » · {fin} pour « la lettre de la fin »</small>
               })()}
             </div>
+            <Chips label="Pour écrire" value={c.ardoise ? 1 : 0} onChange={v => upd({ ardoise: v === 1 })}
+              options={[{ v: 1, l: "L'ardoise (stylet ou doigt)" }, { v: 0, l: 'Le clavier' }]} />
             <div className="field wide">
               <span className="label">Façons de travailler</span>
               <div className="seg">

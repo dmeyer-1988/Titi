@@ -135,9 +135,9 @@ function describe(ex: Exercise) {
     return `${ops}, ${[...k.steps].sort((a, b) => a - b).join(' ')}, ${k.digits} chiffre${k.digits > 1 ? 's' : ''}, ${f}`
   }
   if (ex.type === 'dictee') {
-    const d = ex.config as unknown as { list: string[]; modes: string[] }
+    const d = ex.config as unknown as { list: string[]; modes: string[]; ardoise?: boolean }
     const L: Record<string, string> = { memo: 'regarde-cache-écris', ecrire: 'dictée', son: 'le bon son', fin: 'la fin du mot' }
-    return `${d.list.length} mots · ${d.modes.map(m => L[m]).join(', ')}${rev} : ${d.list.slice(0, 4).map(w => w.split('|')[0].trim()).join(', ')}${d.list.length > 4 ? '…' : ''}`
+    return `${d.list.length} mots${d.ardoise ? ' · ardoise' : ''} · ${d.modes.map(m => L[m]).join(', ')}${rev} : ${d.list.slice(0, 4).map(w => w.split('|')[0].trim()).join(', ')}${d.list.length > 4 ? '…' : ''}`
   }
   if (ex.type === 'son') {
     const a = ex.config as unknown as { focus: string[]; extra: boolean }

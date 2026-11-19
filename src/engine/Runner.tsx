@@ -333,7 +333,7 @@ export function Runner({ exercise, items, onFinished, childName, test, skill, on
             <CombienQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
           )}
           {q.kind === 'dictee' && (
-            <DicteeQ key={idx} q={q} list={ex.type === 'dictee' ? parseList(ex.config.list) : []} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
+            <DicteeQ key={idx} q={q} list={ex.type === 'dictee' ? parseList(ex.config.list) : []} ardoise={ex.type === 'dictee' && ex.config.ardoise} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
           )}
           {q.kind === 'noeuds' && (
             <NoeudsQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
