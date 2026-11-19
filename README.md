@@ -1,4 +1,4 @@
-# Les balles
+# Bigou
 
 Petits jeux de maths pour la 4e HarmoS, pensés pour l'iPad, avec un espace parent pour créer les exercices et suivre les progrès.
 

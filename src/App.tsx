@@ -124,7 +124,7 @@ export default function App() {
   if (!configured) {
     screen = (
       <div className="sheet narrow">
-        <h1>Les balles</h1>
+        <h1>Bigou</h1>
         <p className="lead">Supabase n'est pas encore configuré.</p>
         <p>Renseignez <code>VITE_SUPABASE_URL</code> et <code>VITE_SUPABASE_ANON_KEY</code> (fichier <code>.env</code> en local, variables du dépôt GitHub pour la mise en ligne). Les étapes sont dans le README.</p>
       </div>

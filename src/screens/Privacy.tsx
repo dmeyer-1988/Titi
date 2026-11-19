@@ -8,7 +8,7 @@ const CONTACT = <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
 export function Privacy({ onExit }: { onExit: () => void }) {
   return (
     <div className="sheet narrow">
-      <div className="eyebrow">Les balles</div>
+      <div className="eyebrow">Bigou</div>
       <h1>Confidentialité</h1>
       <p className="lead">Une application d'entraînement pour votre enfant, sans pub ni pistage. Voici, en clair, ce qui est stocké et pourquoi.</p>
 

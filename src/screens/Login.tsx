@@ -43,7 +43,7 @@ export function Login({ onPrivacy, onSignup }: { onPrivacy?: () => void; onSignu
   return (
     <div className="sheet narrow">
       <div className="eyebrow">Espace parent</div>
-      <h1>Les balles</h1>
+      <h1>Bigou</h1>
       <p className="lead">Connectez-vous une fois sur cet appareil. L'enfant n'aura plus rien à saisir ensuite.</p>
       {step === 'email' ? (
         <form onSubmit={send} className="form">

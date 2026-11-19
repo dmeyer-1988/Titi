@@ -13,9 +13,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['apple-touch-icon.png', 'favicon.png'],
       manifest: {
-        name: 'Les balles',
-        short_name: 'Les balles',
-        description: 'Petits jeux de maths pour la 4e HarmoS',
+        name: 'Bigou',
+        short_name: 'Bigou',
+        description: 'Petits jeux de maths, français et géographie pour le primaire',
         lang: 'fr-CH',
         theme_color: '#2D6A9F',
         background_color: '#2D6A9F',

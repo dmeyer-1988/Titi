@@ -35,7 +35,7 @@ export function Parent(p: Props) {
       <header className="parent-head">
         <div>
           <div className="eyebrow">Espace parent</div>
-          <h1>Les balles</h1>
+          <h1>Bigou</h1>
         </div>
         <button className="btn small" onClick={p.onExit}>Retour au jeu</button>
       </header>

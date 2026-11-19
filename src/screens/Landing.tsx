@@ -21,7 +21,7 @@ export function Landing({ onLogin, onSignup, onPrivacy }: {
       <header className="land-hero">
         <div className="land-hero-text">
           <div className="eyebrow light">Maths et français · 1P à 8P</div>
-          <h1>Les balles</h1>
+          <h1>Bigou</h1>
           <p className="lead">Les petits jeux d'entraînement de votre enfant, pensés pour l'iPad : rien à saisir pour lui, tout à suivre pour vous.</p>
           <div className="row">
             <button className="btn big" onClick={onSignup}>Commencer gratuitement</button>
@@ -75,7 +75,7 @@ export function Landing({ onLogin, onSignup, onPrivacy }: {
       </section>
 
       <footer className="land-foot">
-        <span>Les balles — petits jeux d'entraînement pour le primaire.</span>
+        <span>Bigou — petits jeux d'entraînement pour le primaire.</span>
         <button type="button" className="text-link light" onClick={onPrivacy}>Politique de confidentialité</button>
       </footer>
     </div>

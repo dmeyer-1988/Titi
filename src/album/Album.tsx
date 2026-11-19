@@ -171,7 +171,7 @@ export function PackOpening({ ids, before, trade, onDone }: { ids: number[]; bef
           <span className="pack-top" />
           <span className="pack-body">
             <Star />
-            <b>Les balles</b>
+            <b>Bigou</b>
             <small>5 vignettes à gratter</small>
           </span>
           <span className="pack-hint">Touche pour ouvrir</span>

@@ -43,7 +43,7 @@ export function Signup({ onLogin, onPrivacy }: { onLogin: () => void; onPrivacy:
   return (
     <div className="sheet narrow">
       <div className="eyebrow">Créer un compte</div>
-      <h1>Les balles</h1>
+      <h1>Bigou</h1>
       {step === 'email' ? (
         <form onSubmit={send} className="form">
           <p className="lead">C'est votre compte à vous, parent : l'enfant n'aura rien à saisir ensuite.</p>
