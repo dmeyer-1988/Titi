@@ -1,0 +1,37 @@
+name: les_balles
+description: Les balles — petits jeux de maths, français et géographie pour l'iPad (version Flutter).
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  supabase_flutter: ^2.8.0
+  flutter_tts: ^4.2.0
+  flutter_svg: ^2.0.10
+  audioplayers: ^6.1.0
+  shared_preferences: ^2.3.2
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/data/
+    - assets/sounds/
+  fonts:
+    - family: Andika
+      fonts:
+        - asset: assets/fonts/Andika-Regular.ttf
+        - asset: assets/fonts/Andika-Bold.ttf
+          weight: 700
+    - family: Baloo2
+      fonts:
+        - asset: assets/fonts/Baloo2.ttf

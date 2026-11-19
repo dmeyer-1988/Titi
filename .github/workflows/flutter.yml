@@ -1,0 +1,82 @@
+name: App Flutter
+
+on:
+  push:
+    branches: [main]
+    paths: ['app_flutter/**', '.github/workflows/flutter.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: flutter-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Analyse, tests et captures
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app_flutter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter --version
+      - run: flutter pub get
+      - name: Analyse
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee ../analyze.txt
+      - name: Tests du moteur
+        run: flutter test test/engine_test.dart 2>&1 | tee ../tests.txt
+      - name: Captures d'écran
+        if: always()
+        run: flutter test --update-goldens test/shots_test.dart 2>&1 | tee ../shots.txt
+      - name: Publier les captures (branche flutter-shots)
+        if: always()
+        working-directory: .
+        run: |
+          mkdir -p /tmp/shots && cp -r app_flutter/test/goldens/. /tmp/shots/ 2>/dev/null || true
+          cp analyze.txt tests.txt shots.txt /tmp/shots/ 2>/dev/null || true
+          echo "${GITHUB_SHA}" > /tmp/shots/SHA
+          cd /tmp/shots
+          git init -q -b flutter-shots
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A && git commit -qm "Captures de ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" flutter-shots
+
+  ios:
+    name: Compilation iOS
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: app_flutter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Projet iOS (créé une seule fois)
+        run: |
+          if [ ! -d ios ]; then
+            flutter create --platforms=ios --org ch.delyer --project-name les_balles .
+            rm -f test/widget_test.dart
+            echo "CREATED=1" >> "$GITHUB_ENV"
+          fi
+      - run: flutter pub get
+      - name: Compiler pour iOS (sans signature)
+        run: flutter build ios --release --no-codesign 2>&1 | tail -60
+      - name: Garder le projet iOS dans le repo
+        if: env.CREATED == '1'
+        working-directory: .
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add app_flutter/ios
+          git commit -qm "App Flutter : projet iOS généré" || exit 0
+          git pull -q --rebase origin main && git push -q origin HEAD:main
