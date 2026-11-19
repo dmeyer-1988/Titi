@@ -6,6 +6,7 @@ import { hasSon, isTrap, ruleSays, SON_BANK } from './sons'
 import { words } from './words'
 import { type ConfigFor, type ExerciseOf, type ExerciseType } from './types'
 import { TYPES } from './registry'
+import { DICTEE_LISTE5, canMode, diffLetters, findIn, makeQuestion, norm, parseList, silentEnd } from './dictee'
 
 function mk<K extends ExerciseType>(type: K, config: ConfigFor[K] = TYPES[type].defaultConfig()): ExerciseOf<K> {
   const ex: ExerciseOf<K> = { id: 'test-ex', type, title: 'Test', config, active: true, position: 0 }
@@ -226,5 +227,53 @@ describe('words (nombres en lettres, romand)', () => {
     expect(words(80)).toBe('huitante')
     expect(words(100)).toBe('cent')
     expect(words(172)).toBe('cent-septante-deux')
+  })
+})
+
+describe('dictée', () => {
+  it('repère le son [in] mais pas « in » suivi d’une voyelle', () => {
+    expect(findIn('train')?.g).toBe('ain')
+    expect(findIn('peintre')?.g).toBe('ein')
+    expect(findIn('frein')?.g).toBe('ein')
+    expect(findIn('cousin')?.g).toBe('in')
+    expect(findIn('imperméable')?.g).toBe('im')
+    expect(findIn('impressionne')?.g).toBe('im')
+    expect(findIn('cousine')).toBeNull()
+    expect(findIn('fine')).toBeNull()
+  })
+  it('lettre muette de la fin', () => {
+    expect(silentEnd('ta cousine')).toBe('e')
+    expect(silentEnd('ton cousin')).toBe('')
+    expect(silentEnd('mon train')).toBe('')
+    expect(silentEnd('un peintre')).toBe('e')
+    expect(silentEnd('impressionner')).toBeNull()
+    expect(silentEnd('Ma cousine impressionne ce peintre.')).toBeNull()
+  })
+  it('les questions de la liste 5 sont cohérentes', () => {
+    const list = parseList(DICTEE_LISTE5)
+    for (const e of list) {
+      if (canMode('son', e)) {
+        const q = makeQuestion('son', e)
+        if (q.mode !== 'son') throw new Error('mode')
+        expect(q.before + q.blank + q.after).toBe(e.text)
+        expect(q.options).toContain(q.blank)
+      }
+      if (canMode('fin', e)) {
+        const q = makeQuestion('fin', e)
+        if (q.mode !== 'fin') throw new Error('mode')
+        expect(q.stem + q.ending).toBe(e.text)
+        expect(q.options).toContain(q.ending)
+      }
+    }
+    for (let i = 0; i < 30; i++) {
+      const r = makeRound(mk('dictee'))
+      expect(r).toHaveLength(12)
+    }
+  })
+  it('comparaison indulgente et différences', () => {
+    expect(norm('Ma cousine impressionne ce peintre')).toBe(norm('ma  cousine impressionne ce peintre.'))
+    expect(diffLetters('trein', 'train').filter(d => !d.ok && !d.miss).map(d => d.ch).join('')).toBe('e')
+    expect(diffLetters('cousin', 'cousine').filter(d => d.miss)).toHaveLength(1)
+    expect(parseList(['fin | un fil très fin'])[0]).toEqual({ text: 'fin', context: 'un fil très fin' })
   })
 })

@@ -11,6 +11,7 @@ import { chateauxQuestion } from './chateaux'
 import { castleKey, mystereQuestion } from './mystere'
 import { capaciteQuestion } from './capacite'
 import { alphaKey, alphaQuestion, alphaSkills } from './alphabet'
+import { DICTEE_LISTE5, dicteeRound } from './dictee'
 import type { CollectionConfig, ConfigFor, ExerciseOf, ExerciseType, SonConfig, Subject, SuiteConfig, TableConfig } from './types'
 
 export const SUBJECTS: { id: Subject; label: string; tagline: string }[] = [
@@ -39,6 +40,7 @@ function key(q: Question) {
   if (q.kind === 'collection') return 'c' + q.target
   if (q.kind === 'alpha') return alphaKey(q)
   if (q.kind === 'son') return 'o' + q.word
+  if (q.kind === 'dictee') return 'd' + q.mode + q.entry.text
   if (q.kind === 'calc') return 'k' + q.a + q.op + q.b + q.blank
   if (q.kind === 'paquets') return 'p' + q.target
   if (q.kind === 'noeuds') return 'n' + q.skill + nodeName(q.at) + nodeName(q.answer)
@@ -277,6 +279,12 @@ export const TYPES: { [K in ExerciseType]: TypeDef<K> } = {
     help: "La règle (m devant m, b, p) s'affiche au début, puis l'enfant choisit « on » ou « om » pour compléter chaque mot. Les mots à travailler reviennent à chaque partie ; les mots pièges (bonbon, nom, prénom…) sont repérés automatiquement.",
     defaultConfig: () => ({ focus: [...SON_FOCUS_DEFAULT], extra: true, showRule: true, questions: 12 }),
     make: (cfg) => sonRound(cfg),
+  },
+  dictee: {
+    subject: 'francais', label: 'Mes mots de dictée', min: 1,
+    help: "La liste de mots de la semaine. Dictée (la loutre dit le mot, l'enfant l'écrit), Regarde-cache-écris, Le bon son (tr__ : ain, ein ou in ?) et La lettre de la fin (ta cousin__ : rien, e, t ou s ?). Après une erreur, l'enfant regarde la correction et réécrit le mot ; les mots ratés reviennent à la fin de la partie.",
+    defaultConfig: () => ({ list: [...DICTEE_LISTE5], modes: ['memo', 'son', 'fin', 'ecrire'], questions: 12 }),
+    make: (cfg) => dicteeRound(cfg),
   },
 }
 

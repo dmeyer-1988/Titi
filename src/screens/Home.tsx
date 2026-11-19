@@ -65,6 +65,15 @@ export function Thumb({ ex }: { ex: Exercise }) {
       </div>
     )
   }
+  if (ex.type === 'dictee') {
+    const m = (ex.config as { modes?: string[] }).modes ?? []
+    const onlySon = m.length > 0 && m.every(x => x === 'son' || x === 'fin')
+    return (
+      <div className="thumb dictee-thumb" aria-hidden="true">
+        {onlySon ? <span className="w">tr<b>ain</b></span> : <span className="w">✏️ tr<b>ain</b></span>}
+      </div>
+    )
+  }
   if (ex.type === 'son') {
     return (
       <div className="thumb son-thumb" aria-hidden="true">

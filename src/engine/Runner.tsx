@@ -13,6 +13,8 @@ import { NoeudsQ } from './NoeudsQ'
 import { ChateauxQ } from './ChateauxQ'
 import { MystereQ } from './MystereQ'
 import { CapaciteQ } from './CapaciteQ'
+import { DicteeQ } from './DicteeQ'
+import { makeQuestion, parseList, speech as dicteeSpeech, tips as dicteeTips } from './dictee'
 import { moveText, nodeName } from './noeuds'
 import { ruleText } from './chateaux'
 import { explainCapacite } from './capacite'
@@ -89,6 +91,14 @@ export function Runner({ exercise, items, onFinished, childName, test, skill, on
       const text = q.blank === 'c' ? <>Calcule.</> : <>Trouve le nombre qui manque.</>
       return { text, speech: `${W('a')} ${q.op === '+' ? 'plus' : 'moins'} ${W('b')}, égale ${W('c')} ?` }
     }
+    if (q.kind === 'dictee') {
+      const e = q.entry
+      if (q.retry) return { text: <>Tu l'as raté tout à l'heure : écoute et écris-le encore.</>, speech: dicteeSpeech(e) }
+      if (q.mode === 'ecrire') return { text: <>Écoute bien et écris.</>, speech: dicteeSpeech(e) }
+      if (q.mode === 'memo') return { text: <>Regarde bien, puis écris de mémoire.</>, speech: `Regarde bien : ${e.text}` }
+      if (q.mode === 'son') return { text: <>Quel son manque ?</>, speech: `${e.text}. Quel son manque ?` }
+      return { text: <>Comment finit le mot ?</>, speech: `${e.text}. Comment finit le mot ?` }
+    }
     if (q.kind === 'noeuds') {
       const N = nodeName(q.answer), T = q.thing.name
       if (q.skill === 'lire') return { text: <>Sur quel nœud est {T} {q.thing.emoji} ?</>, speech: `Sur quel nœud est ${T} ?` }
@@ -128,7 +138,7 @@ export function Runner({ exercise, items, onFinished, childName, test, skill, on
 
   // Consigne orale : l'app la dit toute seule au début de chaque question.
   useEffect(() => {
-    if (phase !== 'play' || !q || !(q.kind === 'suite' && q.oral)) return
+    if (phase !== 'play' || !q || !((q.kind === 'suite' && q.oral) || q.kind === 'dictee')) return
     const t = setTimeout(() => say(prompt.speech), 450)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -154,7 +164,11 @@ export function Runner({ exercise, items, onFinished, childName, test, skill, on
       tries.current++
       misses.current++
       sounds.bad()
-      const hint = q.kind === 'noeuds'
+      const hint = q.kind === 'dictee'
+        ? (q.mode === 'son' ? (q.blank === 'im' || q.blank === 'in' ? 'Regarde la lettre juste après : un p, un b ou un m ?' : 'Ce mot-là, il faut le retenir par cœur. Essaie un autre son !')
+          : q.mode === 'fin' ? 'Regarde le petit mot devant (un, une, ton, ta…) et pense à la liste.'
+          : 'Regarde bien la correction, puis réécris-le.')
+        : q.kind === 'noeuds'
         ? (q.skill === 'lire' ? "Descends jusqu'à la lettre de la colonne, puis va à gauche jusqu'au chiffre de la ligne."
           : q.skill === 'placer' ? `Ça, c'est le nœud ${given}. Trouve d'abord la colonne (la lettre en bas), puis la ligne (le chiffre à gauche).`
           : `Ça, c'est le nœud ${given}. Pose ton doigt sur ${nodeName(q.at)} et compte les nœuds un par un.`)
@@ -196,6 +210,9 @@ export function Runner({ exercise, items, onFinished, childName, test, skill, on
       const t = q.target, p = Math.floor(t / 10), u = t % 10
       sub = `${p} paquet${p > 1 ? 's' : ''} de 10${u ? ` et ${u} balle${u > 1 ? 's' : ''}` : ''} = ${t} (${words(t)})`
       say(`${words(t)} balles ! ${first ? praise : ''}`)
+    } else if (q.kind === 'dictee') {
+      sub = first ? `« ${q.entry.text} » : bien écrit !` : (dicteeTips(q.entry, ex.type === 'dictee' ? parseList(ex.config.list) : [])[0] ?? `« ${q.entry.text} »`)
+      say(`${q.entry.text}. ${praise}`)
     } else if (q.kind === 'noeuds') {
       sub = q.skill === 'bouger' ? `${cap1(q.thing.name)} arrive sur le nœud ${nodeName(q.answer)}.` : `${cap1(q.thing.name)} est sur le nœud ${nodeName(q.answer)} : colonne ${nodeName(q.answer)[0]}, ligne ${nodeName(q.answer).slice(1)}.`
       say(`${nodeName(q.answer).split('').join(' ')}. ${praise}`)
@@ -239,7 +256,13 @@ export function Runner({ exercise, items, onFinished, childName, test, skill, on
     tries.current = 0
     misses.current = 0
     setMsg(null)
-    if (idx + 1 < round.length) { setIdx(idx + 1); setPhase('play') }
+    // Dictée : un mot raté revient une fois à la fin de la partie.
+    let len = round.length
+    if (q.kind === 'dictee' && !q.retry && results[idx] === false) {
+      setRound(r => [...r, { ex, q: { ...makeQuestion('ecrire', q.entry), retry: true } }])
+      len++
+    }
+    if (idx + 1 < len) { setIdx(idx + 1); setPhase('play') }
     else {
       setPhase('end')
       sounds.fanfare()
@@ -309,6 +332,9 @@ export function Runner({ exercise, items, onFinished, childName, test, skill, on
           {ex.type === 'combien' && q.kind === 'collection' && (
             <CombienQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
           )}
+          {q.kind === 'dictee' && (
+            <DicteeQ key={idx} q={q} list={ex.type === 'dictee' ? parseList(ex.config.list) : []} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
+          )}
           {q.kind === 'noeuds' && (
             <NoeudsQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
           )}
@@ -352,7 +378,7 @@ export function Runner({ exercise, items, onFinished, childName, test, skill, on
               />
             ) : <span />}
             {phase === 'solved' && (
-              <button className="btn" onClick={next} autoFocus>{idx + 1 < round.length ? 'Suivant' : 'Voir mes étoiles'}</button>
+              <button className="btn" onClick={next} autoFocus>{idx + 1 < round.length || (q.kind === 'dictee' && !q.retry && results[idx] === false) ? 'Suivant' : 'Voir mes étoiles'}</button>
             )}
           </div>
         </>

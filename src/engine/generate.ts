@@ -8,6 +8,7 @@ import type { CapaciteQuestion } from './capacite'
 import type { PaquetsQuestion } from './paquets'
 import type { CalcQuestion } from './calcul'
 import type { AlphaQuestion } from './alphabet'
+import type { DicteeQuestion } from './dictee'
 
 export interface CollectionQuestion {
   kind: 'collection'
@@ -37,6 +38,6 @@ export interface SonQuestion {
   kind: 'son'
   word: string
 }
-export type Question = MystereQuestion | NoeudsQuestion | ChateauxQuestion | CapaciteQuestion | CollectionQuestion | SuiteQuestion | TableQuestion | AlphaQuestion | SonQuestion | CalcQuestion | PaquetsQuestion
+export type Question = DicteeQuestion | MystereQuestion | NoeudsQuestion | ChateauxQuestion | CapaciteQuestion | CollectionQuestion | SuiteQuestion | TableQuestion | AlphaQuestion | SonQuestion | CalcQuestion | PaquetsQuestion
 
 export { makeRound, cellKey, cellValue, shuffle } from './registry'

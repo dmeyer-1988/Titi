@@ -133,6 +133,16 @@ export interface PaquetsConfig {
   questions: number
 }
 
+/** « Mes mots de dictée » : la liste de la semaine. */
+export type DicteeMode = 'ecrire' | 'memo' | 'son' | 'fin'
+export interface DicteeConfig {
+  /** un mot ou une phrase par ligne ; « fin | un fil très fin » = le mot, puis la phrase dite pour l'aider */
+  list: string[]
+  modes: DicteeMode[]
+  revision?: boolean
+  questions: number
+}
+
 /** Associe chaque type à sa config : avec Exercise, la paire (type, config) est garantie. */
 export interface ConfigFor {
   entoure: CollectionConfig
@@ -147,6 +157,7 @@ export interface ConfigFor {
   capacite: CapaciteConfig
   alphabet: AlphabetConfig
   son: SonConfig
+  dictee: DicteeConfig
 }
 
 export type ExerciseType = keyof ConfigFor

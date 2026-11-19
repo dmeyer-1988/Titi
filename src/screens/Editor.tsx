@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Runner } from '../engine/Runner'
-import { type AlphabetConfig, type AlphaSkill, type SonConfig, type CalculConfig, type PaquetsConfig, type NoeudsConfig, type NoeudSkill, type ChateauxConfig, type MystereConfig, type CapaciteConfig, type CollectionConfig, type Exercise, type ExerciseType, type SuiteConfig, type TableConfig, SKILL_LABEL } from '../engine/types'
+import { type AlphabetConfig, type AlphaSkill, type SonConfig, type CalculConfig, type PaquetsConfig, type NoeudsConfig, type NoeudSkill, type ChateauxConfig, type MystereConfig, type CapaciteConfig, type DicteeConfig, type DicteeMode, type CollectionConfig, type Exercise, type ExerciseType, type SuiteConfig, type TableConfig, SKILL_LABEL } from '../engine/types'
 import { SUBJECTS, TYPES } from '../engine/registry'
 import { saveExercise } from '../lib/store'
 import { hasSon, isTrap } from '../engine/sons'
 import { calcTitle } from '../engine/calcul'
+import { MODE_LABEL, canMode, parseList } from '../engine/dictee'
 import { Thumb } from './Home'
 
 function Stepper({ id, label, value, min, max, step = 1, onChange, hint }: {
@@ -37,7 +38,7 @@ function Chips<T extends string | number>({ label, value, options, onChange }: {
   )
 }
 
-type AnyConfig = MystereConfig | NoeudsConfig | ChateauxConfig | CapaciteConfig | PaquetsConfig | CollectionConfig | SuiteConfig | TableConfig | AlphabetConfig | SonConfig | CalculConfig
+type AnyConfig = DicteeConfig | MystereConfig | NoeudsConfig | ChateauxConfig | CapaciteConfig | PaquetsConfig | CollectionConfig | SuiteConfig | TableConfig | AlphabetConfig | SonConfig | CalculConfig
 const family = (t: ExerciseType) => (t === 'entoure' || t === 'combien' ? 'collection' : t)
 
 function autoTitle(type: ExerciseType, c: AnyConfig) {
@@ -46,6 +47,7 @@ function autoTitle(type: ExerciseType, c: AnyConfig) {
   if (type === 'chateaux') return (c as ChateauxConfig).towers === 3 ? 'Les châteaux à 3 tours' : 'Les châteaux'
   if (type === 'capacite') return 'Qui contient le plus ?'
   if (type === 'mystere') return 'Le château mystère'
+  if (type === 'dictee') return 'Mes mots de dictée'
   if (type === 'paquets') return (c as PaquetsConfig).extra ? 'Fais des paquets de 10' : 'Compte avec des paquets'
   if (type === 'son') return (c as SonConfig).extra ? 'Le son on / om' : 'Mes mots on / om'
   if (type === 'alphabet') {
@@ -77,6 +79,7 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [focusText, setFocusText] = useState<string | null>(null)
+  const [wordsText, setWordsText] = useState<string | null>(null)
 
   const shownTitle = titleTouched ? title : autoTitle(type, config)
   // L'éditeur mélange type et config librement (brouillon) ; la cohérence est
@@ -98,8 +101,8 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
 
   if (testing) return <Runner exercise={draft} test onExit={() => setTesting(false)} />
 
-  const c = config as MystereConfig & NoeudsConfig & ChateauxConfig & CapaciteConfig & PaquetsConfig & CollectionConfig & SuiteConfig & TableConfig & AlphabetConfig & SonConfig & CalculConfig
-  const invalid = type === 'son' ? !c.focus.some(hasSon) && !c.extra : type === 'calcul' ? !c.astuces && c.steps.length === 0 : type === 'noeuds' ? !c.skills?.length : type === 'chateaux' || type === 'capacite' || type === 'mystere' ? false : type !== 'alphabet' && c.min >= c.max
+  const c = config as DicteeConfig & MystereConfig & NoeudsConfig & ChateauxConfig & CapaciteConfig & PaquetsConfig & CollectionConfig & SuiteConfig & TableConfig & AlphabetConfig & SonConfig & CalculConfig
+  const invalid = type === 'dictee' ? parseList(c.list).length === 0 : type === 'son' ? !c.focus.some(hasSon) && !c.extra : type === 'calcul' ? !c.astuces && c.steps.length === 0 : type === 'noeuds' ? !c.skills?.length : type === 'chateaux' || type === 'capacite' || type === 'mystere' ? false : type !== 'alphabet' && c.min >= c.max
 
   return (
     <div className="editor">
@@ -112,7 +115,7 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
         <div key={sub.id}>
           <div className="types-label">{sub.label}</div>
           <div className="types">
-            {(['entoure', 'combien', 'paquets', 'suite', 'table', 'calcul', 'noeuds', 'mystere', 'chateaux', 'capacite', 'alphabet', 'son'] as ExerciseType[]).filter(t => TYPES[t].subject === sub.id).map(t => (
+            {(['entoure', 'combien', 'paquets', 'suite', 'table', 'calcul', 'noeuds', 'mystere', 'chateaux', 'capacite', 'alphabet', 'son', 'dictee'] as ExerciseType[]).filter(t => TYPES[t].subject === sub.id).map(t => (
               <button key={t} className={'type-card' + (t === type ? ' on' : '')} onClick={() => changeType(t)} aria-pressed={t === type}>
                 <Thumb ex={{ ...draft, type: t, config: family(t) === family(type) ? config : TYPES[t].defaultConfig() } as Exercise} />
                 <b>{TYPES[t].label}</b>
@@ -124,7 +127,32 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
       <p className="help">{TYPES[type].help}</p>
 
       <div className="form-grid">
-        {type === 'noeuds' ? (
+        {type === 'dictee' ? (
+          <>
+            <div className="field wide">
+              <label htmlFor="dwords">Les mots de la liste (un par ligne)</label>
+              <textarea id="dwords" rows={10} value={wordsText ?? c.list.join('\n')}
+                onChange={e => { setWordsText(e.target.value); upd({ list: e.target.value.split('\n').map(w => w.trim()).filter(Boolean) }) }} />
+              <small>Pour un mot court, ajoutez une petite phrase après une barre, elle sera dite pour aider : <code>fin | un fil très fin</code></small>
+              {(() => {
+                const l = parseList(c.list)
+                const son = l.filter(e => canMode('son', e)).length, fin = l.filter(e => canMode('fin', e)).length
+                return <small>{l.length} mot{l.length > 1 ? 's' : ''} · {son} pour « le bon son » · {fin} pour « la lettre de la fin »</small>
+              })()}
+            </div>
+            <div className="field wide">
+              <span className="label">Façons de travailler</span>
+              <div className="seg">
+                {(['memo', 'ecrire', 'son', 'fin'] as DicteeMode[]).map(k => {
+                  const md = (config as DicteeConfig).modes
+                  const on = md.includes(k)
+                  return <button type="button" key={k} aria-pressed={on} disabled={on && md.length === 1}
+                    onClick={() => upd({ modes: on ? md.filter(x => x !== k) : [...md, k] })}>{MODE_LABEL[k]}</button>
+                })}
+              </div>
+            </div>
+          </>
+        ) : type === 'noeuds' ? (
           <>
             <div className="field wide">
               <span className="label">Parties à travailler</span>
@@ -263,7 +291,9 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
             {!c.oral && <Stepper id="blanks" label="Cases vides" value={c.blanks} min={1} max={Math.max(1, c.length - 2)} onChange={n => upd({ blanks: n })} />}
           </>
         )}
-        {type === 'paquets' || type === 'chateaux' || type === 'capacite' || type === 'mystere'
+        {type === 'dictee'
+          ? <Stepper id="q" label="Mots par partie" value={c.questions} min={4} max={30} onChange={n => upd({ questions: n })} hint="12 mots ≈ 10 minutes (les mots ratés reviennent en plus)" />
+          : type === 'paquets' || type === 'chateaux' || type === 'capacite' || type === 'mystere'
           ? <Stepper id="q" label={type === 'paquets' ? 'Nombres par partie' : 'Questions par partie'} value={c.questions} min={1} max={10} onChange={n => upd({ questions: n })} hint={type === 'chateaux' || type === 'mystere' ? 'Un château ≈ 2 minutes' : '5 questions ≈ 4 minutes'} />
           : type === 'table'
           ? <Stepper id="q" label="Tableaux par partie" value={c.questions} min={1} max={6} onChange={n => upd({ questions: n })} hint="Un tableau 4 × 4 ≈ 3 minutes" />
