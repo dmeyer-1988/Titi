@@ -14,6 +14,8 @@ import { ChateauxQ } from './ChateauxQ'
 import { MystereQ } from './MystereQ'
 import { CapaciteQ } from './CapaciteQ'
 import { DicteeQ } from './DicteeQ'
+import { CantonQ, ContinentQ, DrapeauQ } from './GeoQ'
+import { WORLD, cantonByCode, continentById } from './geo'
 import { makeQuestion, parseList, speech as dicteeSpeech, tips as dicteeTips } from './dictee'
 import { moveText, nodeName } from './noeuds'
 import { ruleText } from './chateaux'
@@ -91,6 +93,22 @@ export function Runner({ exercise, items, onFinished, childName, test, skill, on
       const text = q.blank === 'c' ? <>Calcule.</> : <>Trouve le nombre qui manque.</>
       return { text, speech: `${W('a')} ${q.op === '+' ? 'plus' : 'moins'} ${W('b')}, égale ${W('c')} ?` }
     }
+    if (q.kind === 'drapeau')
+      return q.sens === 'nom'
+        ? { text: <>À quel pays est ce drapeau ?</>, speech: 'À quel pays est ce drapeau ?' }
+        : { text: <>Trouve le drapeau : <strong>{q.answer.name}</strong></>, speech: `Trouve le drapeau. ${q.answer.name}.` }
+    if (q.kind === 'continent') {
+      const c = continentById(q.id)
+      return q.mode === 'trouver'
+        ? { text: <>Touche <strong>{c.de}</strong> sur la carte.</>, speech: `Touche ${c.de} sur la carte.` }
+        : { text: <>Comment s'appelle le continent en couleur ?</>, speech: "Comment s'appelle le continent en couleur ?" }
+    }
+    if (q.kind === 'canton') {
+      const c = cantonByCode(q.code)
+      if (q.mode === 'puzzle') return { text: <>Glisse le canton <strong>{c.de}</strong> à sa place.</>, speech: `Glisse le canton ${c.de} à sa place sur la carte.` }
+      if (q.mode === 'trouver') return { text: <>Touche le canton <strong>{c.de}</strong>.</>, speech: `Touche le canton ${c.de}.` }
+      return { text: <>Comment s'appelle le canton en bleu ?</>, speech: "Comment s'appelle le canton en bleu ?" }
+    }
     if (q.kind === 'dictee') {
       const e = q.entry
       if (q.retry) return { text: <>Tu l'as raté tout à l'heure : écoute et écris-le encore.</>, speech: dicteeSpeech(e) }
@@ -164,7 +182,15 @@ export function Runner({ exercise, items, onFinished, childName, test, skill, on
       tries.current++
       misses.current++
       sounds.bad()
-      const hint = q.kind === 'dictee'
+      const hint = q.kind === 'drapeau'
+        ? (q.sens === 'nom' ? 'Regarde bien les couleurs et les formes du drapeau.' : `Ça, c'est le drapeau : ${given}. Cherche encore !`)
+        : q.kind === 'continent'
+        ? (q.mode === 'trouver' ? `Ça, c'est ${WORLD.continents.find(x => x.name === given)?.de ?? given}. Cherche encore !` : 'Regarde où il se trouve : en haut, en bas, à gauche, à droite ?')
+        : q.kind === 'canton'
+        ? (q.mode === 'puzzle' ? 'Pas tout à fait. Regarde sa forme et les cantons voisins, puis essaie ailleurs.'
+          : q.mode === 'trouver' ? `Ça, c'est : ${given}. Cherche encore !`
+          : 'Regarde où il se trouve sur la carte, et ses voisins.')
+        : q.kind === 'dictee'
         ? (q.mode === 'son' ? (q.blank === 'im' || q.blank === 'in' ? 'Regarde la lettre juste après : un p, un b ou un m ?' : 'Ce mot-là, il faut le retenir par cœur. Essaie un autre son !')
           : q.mode === 'fin' ? 'Regarde le petit mot devant (un, une, ton, ta…) et pense à la liste.'
           : 'Regarde bien la correction, puis réécris-le.')
@@ -210,6 +236,17 @@ export function Runner({ exercise, items, onFinished, childName, test, skill, on
       const t = q.target, p = Math.floor(t / 10), u = t % 10
       sub = `${p} paquet${p > 1 ? 's' : ''} de 10${u ? ` et ${u} balle${u > 1 ? 's' : ''}` : ''} = ${t} (${words(t)})`
       say(`${words(t)} balles ! ${first ? praise : ''}`)
+    } else if (q.kind === 'drapeau') {
+      sub = `${q.answer.flag} ${q.answer.name}`
+      say(`${q.answer.name}. ${praise}`)
+    } else if (q.kind === 'continent') {
+      const c = continentById(q.id)
+      sub = c.name
+      say(`${c.name}. ${praise}`)
+    } else if (q.kind === 'canton') {
+      const c = cantonByCode(q.code)
+      sub = q.mode === 'puzzle' ? `Le canton ${c.de} est à sa place !` : `Le canton ${c.de} (${c.code}).`
+      say(`${c.name}. ${praise}`)
     } else if (q.kind === 'dictee') {
       sub = first ? `« ${q.entry.text} » : bien écrit !` : (dicteeTips(q.entry, ex.type === 'dictee' ? parseList(ex.config.list) : [])[0] ?? `« ${q.entry.text} »`)
       say(`${q.entry.text}. ${praise}`)
@@ -332,6 +369,9 @@ export function Runner({ exercise, items, onFinished, childName, test, skill, on
           {ex.type === 'combien' && q.kind === 'collection' && (
             <CombienQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
           )}
+          {q.kind === 'drapeau' && <DrapeauQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />}
+          {q.kind === 'continent' && <ContinentQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />}
+          {q.kind === 'canton' && <CantonQ key={idx} q={q} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />}
           {q.kind === 'dictee' && (
             <DicteeQ key={idx} q={q} list={ex.type === 'dictee' ? parseList(ex.config.list) : []} ardoise={ex.type === 'dictee' && ex.config.ardoise} onAttempt={onAttempt} onSolved={onSolved} onNudge={() => {}} />
           )}

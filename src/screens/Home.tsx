@@ -1,4 +1,6 @@
 import { Pack } from '../engine/Balls'
+import { SWISS } from '../engine/geo'
+import { SKILLS } from '../engine/skills'
 import { CastleArt } from '../engine/MystereQ'
 import type { Child, Exercise, Subject } from '../engine/types'
 import { SUBJECTS, TYPES } from '../engine/registry'
@@ -65,6 +67,22 @@ export function Thumb({ ex }: { ex: Exercise }) {
       </div>
     )
   }
+  if (ex.type === 'drapeaux') {
+    return <div className="thumb geo-thumb" aria-hidden="true"><span>🇨🇭</span><span>🇫🇷</span><span>🇯🇵</span></div>
+  }
+  if (ex.type === 'continents') {
+    return <div className="thumb geo-thumb" aria-hidden="true"><span className="globe">🌍</span></div>
+  }
+  if (ex.type === 'cantons') {
+    const romands = (ex.config as { region?: string }).region !== 'suisse'
+    return (
+      <div className="thumb canton-thumb" aria-hidden="true">
+        <svg viewBox={`0 0 ${SWISS.w} ${SWISS.h}`}>
+          {SWISS.cantons.map(c => <path key={c.code} d={c.d} fill={romands ? (c.romand ? '#F6C945' : '#DCE3EA') : '#F6C945'} stroke="#fff" strokeWidth="4" />)}
+        </svg>
+      </div>
+    )
+  }
   if (ex.type === 'dictee') {
     const m = (ex.config as { modes?: string[] }).modes ?? []
     const onlySon = m.length > 0 && m.every(x => x === 'son' || x === 'fin')
@@ -123,6 +141,13 @@ function SubjectArt({ id }: { id: Subject }) {
         <Pack />
         <span className="op">+</span>
         <span className="num">7</span>
+      </div>
+    )
+  }
+  if (id === 'geo') {
+    return (
+      <div className="subject-art geo" aria-hidden="true">
+        <span className="globe">🌍</span><span className="flag">🇨🇭</span>
       </div>
     )
   }
@@ -202,14 +227,14 @@ export function Home(p: Props) {
           <div className="total-stars" aria-label={`${wallet} étoiles`}>{starIcon}<span>{wallet}</span></div>
         </header>
         <p className="lead">Choisis un jeu.</p>
-        <button className="daily carte" onClick={() => onPath(current.id)}>
+        {SKILLS.some(s => s.subject === current.id) && <button className="daily carte" onClick={() => onPath(current.id)}>
           <span className="daily-text">
             <span className="eyebrow-light">Le chemin des jeux</span>
             <b>La carte — avance de nœud en nœud</b>
             <span className="daily-reward">Bigou t'attend au prochain nœud</span>
           </span>
           <span className="daily-go" aria-hidden="true">🗺️</span>
-        </button>
+        </button>}
         {games.some(e => (e.config as { revision?: boolean }).revision) && (
           <button className="daily revision" onClick={() => onRevision(current.id)}>
             <span className="daily-text">

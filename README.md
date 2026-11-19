@@ -82,3 +82,10 @@ npm run dev
 | `attempts` | chaque réponse : attendu, donné, juste, du premier coup |
 
 Toutes les tables sont en RLS : chaque compte ne voit que ses propres données.
+
+## Cartes et données de géographie
+
+Les fichiers `src/geo/*.json` sont générés par `node scripts/build-geo.mjs` :
+carte du monde d'après Natural Earth (domaine public, via `world-atlas`), cantons suisses d'après les
+limites généralisées de l'OFS / swisstopo (via `swiss-maps`), pays et drapeaux via `countries-list`
+et `i18n-iso-countries`. Source des limites cantonales : OFS, swisstopo.

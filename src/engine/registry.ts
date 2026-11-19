@@ -12,11 +12,13 @@ import { castleKey, mystereQuestion } from './mystere'
 import { capaciteQuestion } from './capacite'
 import { alphaKey, alphaQuestion, alphaSkills } from './alphabet'
 import { DICTEE_LISTE5, dicteeRound } from './dictee'
+import { cantonsOf, cantonsRound, continentsRound, drapeauxRound } from './geo'
 import type { CollectionConfig, ConfigFor, ExerciseOf, ExerciseType, SonConfig, Subject, SuiteConfig, TableConfig } from './types'
 
 export const SUBJECTS: { id: Subject; label: string; tagline: string }[] = [
   { id: 'maths', label: 'Maths', tagline: 'Nombres et opérations' },
   { id: 'francais', label: 'Français', tagline: 'Lire et écrire' },
+  { id: 'geo', label: 'Géographie', tagline: 'Le monde et la Suisse' },
 ]
 
 const rnd = (a: number, b: number) => a + Math.floor(Math.random() * (b - a + 1))
@@ -41,6 +43,9 @@ function key(q: Question) {
   if (q.kind === 'alpha') return alphaKey(q)
   if (q.kind === 'son') return 'o' + q.word
   if (q.kind === 'dictee') return 'd' + q.mode + q.entry.text
+  if (q.kind === 'drapeau') return 'f' + q.answer.code
+  if (q.kind === 'continent') return 'w' + q.mode + q.id + Math.random()
+  if (q.kind === 'canton') return 'g' + q.mode + q.code + Math.random()
   if (q.kind === 'calc') return 'k' + q.a + q.op + q.b + q.blank
   if (q.kind === 'paquets') return 'p' + q.target
   if (q.kind === 'noeuds') return 'n' + q.skill + nodeName(q.at) + nodeName(q.answer)
@@ -285,6 +290,24 @@ export const TYPES: { [K in ExerciseType]: TypeDef<K> } = {
     help: "La liste de mots de la semaine. Dictée (la loutre dit le mot, l'enfant l'écrit), Regarde-cache-écris, Le bon son (tr__ : ain, ein ou in ?) et La lettre de la fin (ta cousin__ : rien, e, t ou s ?). Après une erreur, l'enfant regarde la correction et réécrit le mot ; les mots ratés reviennent à la fin de la partie.",
     defaultConfig: () => ({ list: [...DICTEE_LISTE5], modes: ['memo', 'son', 'fin', 'ecrire'], questions: 12 }),
     make: (cfg) => dicteeRound(cfg),
+  },
+  drapeaux: {
+    subject: 'geo', label: 'Les drapeaux', min: 3,
+    help: "Un drapeau s'affiche : l'enfant choisit le pays parmi 4 (ou l'inverse : le nom du pays, et il choisit le drapeau). Niveau facile (une quarantaine de pays connus), Europe, ou le monde entier.",
+    defaultConfig: () => ({ niveau: 'facile', sens: 'mix', questions: 10 }),
+    make: (cfg) => drapeauxRound(cfg),
+  },
+  continents: {
+    subject: 'geo', label: 'Les continents', min: 3,
+    help: "Une carte du monde : l'enfant touche le continent demandé, ou choisit le nom du continent coloré.",
+    defaultConfig: () => ({ jeu: 'mix', antarctique: true, questions: 8 }),
+    make: (cfg) => continentsRound(cfg),
+  },
+  cantons: {
+    subject: 'geo', label: 'Les cantons', min: 1,
+    help: "La carte de la Suisse. Puzzle : l'enfant glisse chaque canton à sa place sur la carte. Ou bien il touche le canton demandé, ou choisit le nom du canton coloré. Les cantons romands (GE, VD, VS, NE, FR, JU) avec une carte agrandie, ou les 26 cantons.",
+    defaultConfig: () => ({ region: 'romands', jeu: 'puzzle', questions: cantonsOf('romands').length }),
+    make: (cfg) => cantonsRound(cfg),
   },
 }
 

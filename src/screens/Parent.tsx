@@ -134,6 +134,18 @@ function describe(ex: Exercise) {
     const f = k.find === 'resultat' ? 'trouver le résultat' : k.find === 'manquant' ? 'trouver le nombre manquant' : 'résultat ou nombre manquant'
     return `${ops}, ${[...k.steps].sort((a, b) => a - b).join(' ')}, ${k.digits} chiffre${k.digits > 1 ? 's' : ''}, ${f}`
   }
+  if (ex.type === 'drapeaux') {
+    const d = ex.config as unknown as { niveau: string; sens: string }
+    return `${d.niveau === 'facile' ? 'pays faciles' : d.niveau === 'europe' ? 'Europe' : 'monde entier'}, ${d.sens === 'nom' ? 'drapeau → pays' : d.sens === 'drapeau' ? 'pays → drapeau' : 'dans les deux sens'}${rev}`
+  }
+  if (ex.type === 'continents') {
+    const d = ex.config as unknown as { jeu: string; antarctique: boolean }
+    return `${d.jeu === 'trouver' ? 'toucher' : d.jeu === 'nommer' ? 'nommer' : 'toucher + nommer'}, ${d.antarctique ? '7' : '6'} continents${rev}`
+  }
+  if (ex.type === 'cantons') {
+    const d = ex.config as unknown as { jeu: string; region: string; questions: number }
+    return `${d.region === 'romands' ? 'cantons romands' : '26 cantons'}, ${d.jeu === 'puzzle' ? `puzzle (${d.questions})` : d.jeu === 'trouver' ? 'toucher' : d.jeu === 'nommer' ? 'nommer' : 'toucher + nommer'}${rev}`
+  }
   if (ex.type === 'dictee') {
     const d = ex.config as unknown as { list: string[]; modes: string[]; ardoise?: boolean }
     const L: Record<string, string> = { memo: 'regarde-cache-écris', ecrire: 'dictée', son: 'le bon son', fin: 'la fin du mot' }

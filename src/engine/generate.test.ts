@@ -277,3 +277,30 @@ describe('dictée', () => {
     expect(parseList(['fin | un fil très fin'])[0]).toEqual({ text: 'fin', context: 'un fil très fin' })
   })
 })
+
+describe('géographie', () => {
+  it('drapeaux : 4 options distinctes dont la bonne', () => {
+    for (const niveau of ['facile', 'europe', 'monde'] as const) {
+      for (const q of makeRound(mk('drapeaux', { niveau, sens: 'mix', questions: 20 }))) {
+        if (q.kind !== 'drapeau') throw new Error(q.kind)
+        expect(new Set(q.options.map(o => o.code)).size).toBe(4)
+        expect(q.options.map(o => o.code)).toContain(q.answer.code)
+      }
+    }
+  })
+  it('continents et cantons : réponses dans les options, puzzle complet', () => {
+    for (const q of makeRound(mk('continents', { jeu: 'nommer', antarctique: false, questions: 12 }))) {
+      if (q.kind !== 'continent') throw new Error(q.kind)
+      expect(q.id).not.toBe('AN')
+      expect(q.options).toContain(q.id)
+    }
+    const p = makeRound(mk('cantons', { region: 'suisse', jeu: 'puzzle', questions: 26 }))
+    expect(p).toHaveLength(26)
+    expect(new Set(p.map(q => (q as { code: string }).code)).size).toBe(26)
+    for (const q of makeRound(mk('cantons', { region: 'romands', jeu: 'mix', questions: 10 }))) {
+      if (q.kind !== 'canton') throw new Error(q.kind)
+      expect(['GE', 'VD', 'VS', 'NE', 'FR', 'JU']).toContain(q.code)
+      if (q.mode === 'nommer') expect(q.options).toContain(q.code)
+    }
+  })
+})

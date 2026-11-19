@@ -22,7 +22,7 @@ export function Path({ subject, childName, level, attempts, onPlay, onExit }: {
   onExit: () => void
 }) {
   const skills = skillsFor(subject, level)
-  const label = subject === 'maths' ? 'Maths' : 'Français'
+  const label = subject === 'maths' ? 'Maths' : subject === 'geo' ? 'Géographie' : 'Français'
 
   if (skills.length === 0) {
     return (

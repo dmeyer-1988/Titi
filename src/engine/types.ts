@@ -3,7 +3,7 @@
 
 
 /** Matières affichées sur l'accueil. La matière d'un exercice découle de son type (voir registry.ts). */
-export type Subject = 'maths' | 'francais'
+export type Subject = 'maths' | 'francais' | 'geo'
 
 /** "Entoure la collection de N balles" et "Combien de balles ?" */
 export interface CollectionConfig {
@@ -145,6 +145,34 @@ export interface DicteeConfig {
   questions: number
 }
 
+/** Géographie : reconnaître les drapeaux. */
+export interface DrapeauxConfig {
+  /** 'facile' = une quarantaine de pays connus ; 'europe' ; 'monde' = tous les pays */
+  niveau: 'facile' | 'europe' | 'monde'
+  /** 'nom' = on voit le drapeau, on choisit le pays ; 'drapeau' = l'inverse */
+  sens: 'nom' | 'drapeau' | 'mix'
+  revision?: boolean
+  questions: number
+}
+
+/** Géographie : les continents sur la carte du monde. */
+export interface ContinentsConfig {
+  /** 'trouver' = toucher le continent nommé ; 'nommer' = dire le nom du continent coloré */
+  jeu: 'trouver' | 'nommer' | 'mix'
+  antarctique: boolean
+  revision?: boolean
+  questions: number
+}
+
+/** Géographie : les cantons suisses. */
+export interface CantonsConfig {
+  region: 'romands' | 'suisse'
+  /** 'puzzle' = poser chaque canton à sa place ; 'trouver' = toucher le canton ; 'nommer' = choisir son nom */
+  jeu: 'puzzle' | 'trouver' | 'nommer' | 'mix'
+  revision?: boolean
+  questions: number
+}
+
 /** Associe chaque type à sa config : avec Exercise, la paire (type, config) est garantie. */
 export interface ConfigFor {
   entoure: CollectionConfig
@@ -160,6 +188,9 @@ export interface ConfigFor {
   alphabet: AlphabetConfig
   son: SonConfig
   dictee: DicteeConfig
+  drapeaux: DrapeauxConfig
+  continents: ContinentsConfig
+  cantons: CantonsConfig
 }
 
 export type ExerciseType = keyof ConfigFor
