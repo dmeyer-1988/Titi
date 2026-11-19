@@ -98,15 +98,17 @@ class _SonGameState extends State<SonGame> {
       const SizedBox(height: 22),
       Row(mainAxisAlignment: MainAxisAlignment.center, children: [
         for (final v in const ['on', 'om'])
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: SizedBox(
-              width: MediaQuery.sizeOf(context).width < 400 ? 120 : 140,
+          Flexible(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 160),
+              child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
               child: AnswerCard(
                 wrong: shake == v,
                 onTap: done ? null : () => choose(v),
                 child: Text(v, style: body(44, color: v == 'om' ? C.orange : C.court, weight: FontWeight.w700)),
               ),
+            ),
             ),
           ),
       ]),
