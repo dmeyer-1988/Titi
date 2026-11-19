@@ -28,7 +28,7 @@ class LesBallesApp extends StatelessWidget {
     return AppScope(
       state: state,
       child: MaterialApp(
-        title: 'Les balles',
+        title: 'Bigou',
         debugShowCheckedModeBanner: false,
         theme: appTheme(),
         home: const Root(),

@@ -69,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
         maxWidth: 560,
         child: ListView(padding: const EdgeInsets.all(28), children: [
           Text('ESPACE PARENT', style: body(14, color: C.inkSoft, weight: FontWeight.w700)),
-          Text('Les balles', style: display(46, color: C.court)),
+          Text('Bigou', style: display(46, color: C.court)),
           Text("Connectez-vous une fois sur cet appareil. L'enfant n'aura plus rien à saisir ensuite.", style: body(18)),
           const SizedBox(height: 22),
           if (step != 'code') ...[

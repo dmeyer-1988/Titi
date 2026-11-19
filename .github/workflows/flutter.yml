@@ -64,7 +64,7 @@ jobs:
       - name: Projet iOS (créé une seule fois)
         run: |
           if [ ! -d ios ]; then
-            flutter create --platforms=ios --org ch.delyer --project-name les_balles .
+            flutter create --platforms=ios --org ch.delyer --project-name bigou .
             rm -f test/widget_test.dart
             echo "CREATED=1" >> "$GITHUB_ENV"
           fi

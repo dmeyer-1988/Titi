@@ -1,4 +1,4 @@
-# Les balles — app Flutter (iPad et iPhone)
+# Bigou — app Flutter (iPad et iPhone)
 
 Réécriture native de l'app web, branchée sur la même base Supabase (mêmes comptes, exercices et étoiles).
 

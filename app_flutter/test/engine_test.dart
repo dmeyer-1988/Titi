@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:les_balles/engine/calcul.dart';
-import 'package:les_balles/engine/geo.dart';
-import 'package:les_balles/engine/question.dart';
-import 'package:les_balles/engine/registry.dart';
-import 'package:les_balles/engine/sons.dart';
-import 'package:les_balles/engine/words.dart';
-import 'package:les_balles/data/models.dart';
+import 'package:bigou/engine/calcul.dart';
+import 'package:bigou/engine/geo.dart';
+import 'package:bigou/engine/question.dart';
+import 'package:bigou/engine/registry.dart';
+import 'package:bigou/engine/sons.dart';
+import 'package:bigou/engine/words.dart';
+import 'package:bigou/data/models.dart';
 
 Exercise ex(String type, Map<String, dynamic> config) => Exercise(id: 't', type: type, title: 't', config: config);
 

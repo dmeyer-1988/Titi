@@ -3,14 +3,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:les_balles/data/app_state.dart';
-import 'package:les_balles/data/demo.dart';
-import 'package:les_balles/engine/geo.dart';
-import 'package:les_balles/engine/registry.dart';
-import 'package:les_balles/screens/home.dart';
-import 'package:les_balles/screens/runner.dart';
-import 'package:les_balles/ui/audio.dart';
-import 'package:les_balles/ui/theme.dart';
+import 'package:bigou/data/app_state.dart';
+import 'package:bigou/data/demo.dart';
+import 'package:bigou/engine/geo.dart';
+import 'package:bigou/engine/registry.dart';
+import 'package:bigou/screens/home.dart';
+import 'package:bigou/screens/runner.dart';
+import 'package:bigou/ui/audio.dart';
+import 'package:bigou/ui/theme.dart';
 
 Future<void> loadFonts() async {
   final andika = FontLoader('Andika')
