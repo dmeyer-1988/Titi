@@ -13,7 +13,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GeoData.load();
   if (!demoMode) {
-    await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+    await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey /* publishableKey quand supabase_flutter 3 sera stable */);
   }
   final state = AppState();
   runApp(LesBallesApp(state: state));

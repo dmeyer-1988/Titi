@@ -78,10 +78,13 @@ class _SonGameState extends State<SonGame> {
         IconButton.filledTonal(onPressed: () => Sounds.say(widget.q.word), icon: const Icon(Icons.volume_up_rounded, size: 28)),
         const SizedBox(width: 12),
         Flexible(
-          child: Container(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), border: Border.all(color: C.rule, width: 3)),
             child: Text.rich(TextSpan(style: body(56), children: spans)),
+          ),
           ),
         ),
         if (trap && (done || missed))
@@ -98,7 +101,7 @@ class _SonGameState extends State<SonGame> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: SizedBox(
-              width: 140,
+              width: MediaQuery.sizeOf(context).width < 400 ? 120 : 140,
               child: AnswerCard(
                 wrong: shake == v,
                 onTap: done ? null : () => choose(v),

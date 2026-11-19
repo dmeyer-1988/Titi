@@ -92,7 +92,7 @@ List<Question> drapeauxRound(Map<String, dynamic> c) {
     final near = shuffled(pool.where((x) => x.code != answer.code && x.cont == answer.cont));
     final far = shuffled(pool.where((x) => x.code != answer.code && x.cont != answer.cont));
     final others = <Country>[];
-    for (final x in [...near.take(2), ...far]) {
+    for (final x in [...near.take(2), ...far, ...near.skip(2)]) {
       if (others.length == 3) break;
       if (!others.contains(x)) others.add(x);
     }

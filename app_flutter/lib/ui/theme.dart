@@ -82,7 +82,7 @@ class BigButton extends StatelessWidget {
     return Opacity(
       opacity: enabled ? 1 : 0.5,
       child: Material(
-        color: bg,
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(999),
         child: InkWell(
           borderRadius: BorderRadius.circular(999),
@@ -90,6 +90,7 @@ class BigButton extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
             decoration: BoxDecoration(
+              color: bg,
               borderRadius: BorderRadius.circular(999),
               border: ghost ? Border.all(color: C.rule, width: 2) : null,
               boxShadow: ghost ? null : [BoxShadow(color: Color.lerp(color, Colors.black, 0.3)!, offset: const Offset(0, 5))],

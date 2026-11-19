@@ -40,7 +40,7 @@ class _AnswerCardState extends State<AnswerCard> with SingleTickerProviderStateM
         duration: const Duration(milliseconds: 200),
         opacity: widget.wrong ? 0.4 : 1,
         child: Material(
-          color: widget.right ? C.okSoft : Colors.white,
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(18),
           child: InkWell(
             borderRadius: BorderRadius.circular(18),
@@ -48,6 +48,7 @@ class _AnswerCardState extends State<AnswerCard> with SingleTickerProviderStateM
             child: Container(
               padding: widget.padding,
               decoration: BoxDecoration(
+                color: widget.right ? C.okSoft : Colors.white,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: widget.right ? C.ok : C.rule, width: 3),
                 boxShadow: widget.right ? null : const [BoxShadow(color: C.rule, offset: Offset(0, 4))],

@@ -77,7 +77,7 @@ class _CalcGameState extends State<CalcGame> {
               onTap: done ? null : () => press(d),
               child: Container(
                 alignment: Alignment.center,
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: color == null ? C.rule : color, width: 2)),
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: color ?? C.rule, width: 2)),
                 child: Text(label, style: display(30, color: color == null ? C.ink : Colors.white)),
               ),
             ),

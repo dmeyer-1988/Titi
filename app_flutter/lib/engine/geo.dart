@@ -1,7 +1,6 @@
 // Géographie : les pays et leurs drapeaux (données générées par scripts/build-geo.mjs du site web).
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
-import 'rng.dart';
 
 class Country {
   final String code, name, cont, flag;
