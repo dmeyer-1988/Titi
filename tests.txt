@@ -1,0 +1,11 @@
+
+::group::✅ Passing tests
+✅ nombres en lettres (Suisse romande)
+✅ combien : 3 options distinctes dont la bonne, dans les bornes
+✅ calcul : résultats justes, jamais négatifs
+✅ son on/om : règle et mots pièges
+✅ drapeaux : 4 options distinctes dont la bonne
+✅ types inconnus : pas de questions (jeu encore dans la version web)
+::endgroup::
+
+🎉 6 tests passed.

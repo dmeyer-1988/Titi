@@ -1,0 +1,19 @@
+
+::group::✅ Passing tests
+✅ accueil ipad
+✅ matière ipad
+✅ jeu d1 ipad
+✅ jeu d2 ipad
+✅ jeu d3 ipad
+✅ jeu d4 ipad
+✅ jeu d5 ipad
+✅ accueil phone
+✅ matière phone
+✅ jeu d1 phone
+✅ jeu d2 phone
+✅ jeu d3 phone
+✅ jeu d4 phone
+✅ jeu d5 phone
+::endgroup::
+
+🎉 14 tests passed.
