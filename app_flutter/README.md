@@ -23,8 +23,8 @@ flutter run --dart-define=DEMO=true
 |---|---|---|
 | 1 | Connexion (code e-mail ou mot de passe), première utilisation, accueil Maths / Français / Géographie, partie, étoiles, série 🔥, Bigou et sa voix, file d'attente hors ligne | ✅ |
 | 1 | Jeux : Combien de balles, Calcul (+ astuces), Le son on / om, Les drapeaux | ✅ |
-| 2 | Entoure, Paquets de 10, Suite, Tableau d'addition, Nœuds, Châteaux, Capacité | à faire |
-| 3 | Alphabet, Dictée (clavier + ardoise Apple Pencil), Continents, Cantons | à faire |
+| 2 | Entoure (au doigt), Paquets de 10, Suite (et à l'oral), Tableau d'addition, Nœuds, Tours de cubes, Capacité | ✅ |
+| 3 | Alphabet, Dictée (clavier + ardoise Apple Pencil), Continents, Cantons, Château mystère | à faire |
 | 4 | Album, équipes, défi du jour, espace parent | à faire |
 
 Les jeux pas encore portés n'apparaissent pas dans l'app ; ils restent jouables dans la version web.
