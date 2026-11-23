@@ -43,6 +43,18 @@ void main() {
     }
   });
 
+  test('calculs jusqu’à N : tout reste entre 0 et N', () {
+    for (final l in [10, 20, 30, 100]) {
+      for (var i = 0; i < 300; i++) {
+        final q = calcQuestion({'op': 'mix', 'find': 'mix', 'limite': l});
+        for (final n in [q.a, q.b, q.c]) {
+          expect(n, inInclusiveRange(0, l));
+        }
+        expect(q.op == '+' ? q.a + q.b : q.a - q.b, q.c);
+      }
+    }
+  });
+
   test('son on/om : règle et mots pièges', () {
     expect(hasSon('ombre'), isTrue);
     expect(isTrap('bonbon'), isTrue);

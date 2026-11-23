@@ -129,9 +129,10 @@ function describe(ex: Exercise) {
   if (ex.type === 'calcul' && c.astuces) return `amis de 10, doubles, +9, ±10, dizaines${rev}`
   if (ex.type === 'suite' && c.oral) return `consigne orale, de 1 en 1, ${c.min}–${c.max}${rev}`
   if (ex.type === 'calcul') {
-    const k = ex.config as unknown as { op: string; steps: number[]; digits: number; find: string }
+    const k = ex.config as unknown as { op: string; steps: number[]; digits: number; find: string; limite?: number }
     const ops = k.op === '+' ? 'additions' : k.op === '-' ? 'soustractions' : 'additions et soustractions'
     const f = k.find === 'resultat' ? 'trouver le résultat' : k.find === 'manquant' ? 'trouver le nombre manquant' : 'résultat ou nombre manquant'
+    if (k.limite) return `${ops} jusqu'à ${k.limite}, ${f}${rev}`
     return `${ops}, ${[...k.steps].sort((a, b) => a - b).join(' ')}, ${k.digits} chiffre${k.digits > 1 ? 's' : ''}, ${f}`
   }
   if (ex.type === 'drapeaux') {

@@ -82,6 +82,8 @@ export interface CalculConfig {
   find: 'resultat' | 'manquant' | 'mix'
   /** « Calculer efficacement » : amis de 10, doubles, +9, +10… (remplace op/steps/digits) */
   astuces?: boolean
+  /** « Calculs jusqu'à 20 » : tous les nombres du calcul (et le résultat) restent ≤ limite (remplace steps/digits) */
+  limite?: number
   revision?: boolean
   questions: number
 }

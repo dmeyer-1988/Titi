@@ -304,3 +304,16 @@ describe('géographie', () => {
     }
   })
 })
+
+describe('calculs jusqu’à N', () => {
+  it('tous les nombres restent entre 0 et la limite', () => {
+    for (const limite of [10, 20, 30, 100]) {
+      for (let i = 0; i < 300; i++) {
+        const [q] = makeRound(mk('calcul', { op: 'mix', steps: [], digits: 2, find: 'mix', limite, questions: 3 }))
+        if (q.kind !== 'calc') throw new Error(q.kind)
+        for (const n of [q.a, q.b, q.c]) { expect(n).toBeGreaterThanOrEqual(0); expect(n).toBeLessThanOrEqual(limite) }
+        expect(q.op === '+' ? q.a + q.b : q.a - q.b).toBe(q.c)
+      }
+    }
+  })
+})

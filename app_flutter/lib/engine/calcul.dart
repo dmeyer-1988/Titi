@@ -42,8 +42,32 @@ CalcQuestion astuceQuestion() {
   }
 }
 
+/// « Calculs jusqu'à N » : tous les nombres du calcul (et le résultat) restent entre 0 et N.
+CalcQuestion limitedQuestion(Map<String, dynamic> c, int limite) {
+  final l = limite.clamp(5, 1000);
+  final opCfg = cfgStr(c, 'op', '+');
+  final op = opCfg == 'mix' ? (rng.nextBool() ? '+' : '-') : opCfg;
+  final top = rng.nextDouble() < 0.7 ? rnd((l / 2).ceil(), l) : rnd(2, l);
+  late int a, b, res;
+  if (op == '+') {
+    res = top;
+    a = rnd(1, top - 1);
+    b = top - a;
+  } else {
+    a = top;
+    b = rnd(1, top - 1);
+    res = a - b;
+  }
+  final findCfg = cfgStr(c, 'find', 'resultat');
+  final find = findCfg == 'mix' ? (rng.nextBool() ? 'resultat' : 'manquant') : findCfg;
+  final blank = find == 'resultat' ? 'c' : (rng.nextDouble() < 0.7 ? 'b' : 'a');
+  return CalcQuestion(op: op, a: a, b: b, c: res, blank: blank);
+}
+
 CalcQuestion calcQuestion(Map<String, dynamic> c) {
   if (cfgBool(c, 'astuces', false)) return astuceQuestion();
+  final limite = cfgInt(c, 'limite', 0);
+  if (limite > 0) return limitedQuestion(c, limite);
   var steps = cfgInts(c, 'steps');
   if (steps.isEmpty) steps = List.generate(11, (i) => i);
   final b = pick(steps);

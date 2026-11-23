@@ -237,7 +237,7 @@ export const TYPES: { [K in ExerciseType]: TypeDef<K> } = {
   },
   calcul: {
     subject: 'maths', label: 'Calcul', min: 3,
-    help: "Additions et soustractions du type 34 + 3 ou 47 − 5. Choisissez les nombres à ajouter ou enlever (+0 à +10), la taille du grand nombre, et si l'enfant cherche le résultat ou le nombre manquant (34 + ? = 37).",
+    help: "Additions et soustractions du type 34 + 3 ou 47 − 5. Choisissez les nombres à ajouter ou enlever (+0 à +10) et la taille du grand nombre — ou « Calculs jusqu'à 10, 20, 30… » : tous les nombres du calcul restent sous cette limite (8 + 7 = 15). Et si l'enfant cherche le résultat ou le nombre manquant (34 + ? = 37).",
     defaultConfig: () => ({ op: '+', steps: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], digits: 2, find: 'resultat', questions: 10 }),
     make: (cfg) => uniqueRound(clamp(cfg.questions ?? 10, 3, 20), () => calcQuestion(cfg)),
   },
