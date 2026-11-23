@@ -51,7 +51,7 @@ class _SuiteGameState extends State<SuiteGame> {
     final q = widget.q;
     final narrow = MediaQuery.sizeOf(context).width < 640;
     return Column(children: [
-      Wrap(alignment: WrapAlignment.center, crossAxisAlignment: WrapCrossAlignment.center, runSpacing: 10, children: [
+      FittedBox(fit: BoxFit.scaleDown, child: Row(mainAxisSize: MainAxisSize.min, children: [
         for (var i = 0; i < q.seq.length; i++) ...[
           () {
             final blank = q.blanks.contains(i), cur = i == current, ok = filled.containsKey(i);
@@ -79,7 +79,7 @@ class _SuiteGameState extends State<SuiteGame> {
               ),
             ),
         ],
-      ]),
+      ])),
       const SizedBox(height: 22),
       Keypad(onKey: press, enabled: !done, okEnabled: entry.isNotEmpty),
     ]);

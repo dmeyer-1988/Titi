@@ -53,14 +53,18 @@ void main() {
 
   for (final e in sizes.entries) {
     testWidgets('accueil ${e.key}', (t) async {
-      await t.binding.setSurfaceSize(e.value);
+      t.view.physicalSize = e.value;
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.reset);
       await t.pumpWidget(wrap(demoState(), const HomeScreen()));
       await settle(t);
       await expectLater(find.byType(MaterialApp), matchesGoldenFile('goldens/home_${e.key}.png'));
     });
 
     testWidgets('matière ${e.key}', (t) async {
-      await t.binding.setSurfaceSize(e.value);
+      t.view.physicalSize = e.value;
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.reset);
       await t.pumpWidget(wrap(demoState(), SubjectScreen(subject: subjects.first)));
       await settle(t);
       await expectLater(find.byType(MaterialApp), matchesGoldenFile('goldens/maths_${e.key}.png'));
@@ -68,7 +72,9 @@ void main() {
 
     for (final ex in demoFamily.exercises.where(isSupported)) {
       testWidgets('jeu ${ex.id} ${e.key}', (t) async {
-        await t.binding.setSurfaceSize(e.value);
+        t.view.physicalSize = e.value;
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.reset);
         await t.pumpWidget(wrap(demoState(), RunnerScreen(exercise: ex)));
         await settle(t);
         await expectLater(find.byType(MaterialApp), matchesGoldenFile('goldens/game_${ex.id}_${e.key}.png'));

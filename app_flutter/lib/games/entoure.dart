@@ -98,7 +98,7 @@ class _EntoureGameState extends State<EntoureGame> {
             const gap = 26.0;
             final cols = box.maxWidth < 520 ? 1 : 2;
             final w = (box.maxWidth - gap * (cols - 1)) / cols;
-            final b = cols == 1 ? 22.0 : 24.0;
+            final b = cols == 1 ? 20.0 : 19.0;
             return Wrap(spacing: gap, runSpacing: gap, children: [
               for (var i = 0; i < q.options.length; i++)
                 AnimatedOpacity(

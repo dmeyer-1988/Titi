@@ -180,7 +180,6 @@ class _PaquetsGameState extends State<PaquetsGame> {
           Text('=', style: display(24, color: C.inkSoft)),
           Container(
             constraints: const BoxConstraints(minWidth: 56),
-            alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
               color: total == q.target ? C.okSoft : Colors.white,

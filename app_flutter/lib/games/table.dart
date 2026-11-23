@@ -109,7 +109,7 @@ class _TableGameState extends State<TableGame> {
           decoration: BoxDecoration(
             color: ok ? C.okSoft : blank ? Colors.white : head ? tint.$2 : tint.$1,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: isCur ? (shake ? C.no : C.court) : lit ? C.red : ok ? C.ok : Colors.transparent, width: 3),
+            border: Border.all(color: isCur ? (shake ? C.no : C.court) : lit ? C.red : ok ? C.ok : blank ? tint.$2 : Colors.transparent, width: 3),
           ),
           child: Text(text, style: display(cs * 0.44, color: ok ? C.ok : blank ? C.court : C.ink)),
         ),
