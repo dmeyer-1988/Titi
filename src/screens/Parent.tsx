@@ -132,7 +132,7 @@ function describe(ex: Exercise) {
     const k = ex.config as unknown as { op: string; steps: number[]; digits: number; find: string; limite?: number }
     const ops = k.op === '+' ? 'additions' : k.op === '-' ? 'soustractions' : 'additions et soustractions'
     const f = k.find === 'resultat' ? 'trouver le résultat' : k.find === 'manquant' ? 'trouver le nombre manquant' : 'résultat ou nombre manquant'
-    if (k.limite) return `${ops} jusqu'à ${k.limite}, ${f}${rev}`
+    if (k.limite) return `${ops}, ${[...k.steps].sort((a, b) => a - b).join(' ')}, jusqu'à ${k.limite}, ${f}${rev}`
     return `${ops}, ${[...k.steps].sort((a, b) => a - b).join(' ')}, ${k.digits} chiffre${k.digits > 1 ? 's' : ''}, ${f}`
   }
   if (ex.type === 'drapeaux') {

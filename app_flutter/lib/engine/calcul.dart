@@ -42,22 +42,20 @@ CalcQuestion astuceQuestion() {
   }
 }
 
-/// « Calculs jusqu'à N » : tous les nombres du calcul (et le résultat) restent entre 0 et N.
+/// « Calculs jusqu'à N » : on ajoute ou enlève toujours un des nombres choisis (+0 à +10),
+/// mais tous les nombres du calcul restent entre 0 et N : 13 + 4 = 17, 18 − 6 = 12…
 CalcQuestion limitedQuestion(Map<String, dynamic> c, int limite) {
   final l = limite.clamp(5, 1000);
   final opCfg = cfgStr(c, 'op', '+');
   final op = opCfg == 'mix' ? (rng.nextBool() ? '+' : '-') : opCfg;
-  final top = rng.nextDouble() < 0.7 ? rnd((l / 2).ceil(), l) : rnd(2, l);
-  late int a, b, res;
-  if (op == '+') {
-    res = top;
-    a = rnd(1, top - 1);
-    b = top - a;
-  } else {
-    a = top;
-    b = rnd(1, top - 1);
-    res = a - b;
-  }
+  var steps = cfgInts(c, 'steps');
+  if (steps.isEmpty) steps = List.generate(11, (i) => i);
+  steps = steps.where((n) => n <= l).toList();
+  final b = steps.isNotEmpty ? pick(steps) : rnd(1, l);
+  final lo = b > (l / 2).ceil() ? b : (l / 2).ceil();
+  final top = rng.nextDouble() < 0.7 ? rnd(lo, l) : rnd(b, l);
+  final a = op == '+' ? top - b : top;
+  final res = op == '+' ? top : top - b;
   final findCfg = cfgStr(c, 'find', 'resultat');
   final find = findCfg == 'mix' ? (rng.nextBool() ? 'resultat' : 'manquant') : findCfg;
   final blank = find == 'resultat' ? 'c' : (rng.nextDouble() < 0.7 ? 'b' : 'a');

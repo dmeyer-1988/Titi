@@ -33,15 +33,21 @@ export function astuceQuestion(): CalcQuestion {
   return { kind: 'calc', op: '+', a, b: up - a, c: up, blank: 'b', tip: `Combien pour aller jusqu'à ${up} ? Pense aux amis de 10 avec le ${a % 10}.` }
 }
 
-/** « Calculs jusqu'à N » : 8 + 7 = 15, 17 − 9 = 8… tous les nombres restent entre 0 et N. */
+/**
+ * « Calculs jusqu'à N » : on ajoute ou enlève toujours un des nombres choisis (+0 à +10),
+ * mais tous les nombres du calcul restent entre 0 et N : 13 + 4 = 17, 18 − 6 = 12…
+ */
 function limitedQuestion(c: CalculConfig, limite: number): CalcQuestion {
   const L = Math.max(5, Math.min(1000, Math.round(limite)))
   const op: '+' | '-' = c.op === 'mix' ? (Math.random() < 0.5 ? '+' : '-') : c.op
+  const steps = (c.steps?.length ? c.steps : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).filter(n => n <= L)
+  const b = steps.length ? steps[rnd(0, steps.length - 1)] : rnd(1, L)
   // le plus grand nombre du calcul : souvent dans la moitié haute, pour travailler vraiment « jusqu'à N »
-  const top = Math.random() < 0.7 ? rnd(Math.ceil(L / 2), L) : rnd(2, L)
-  let a: number, b: number, res: number
-  if (op === '+') { res = top; a = rnd(1, top - 1); b = top - a }
-  else { a = top; b = rnd(1, top - 1); res = a - b }
+  const lo = Math.max(b, Math.ceil(L / 2))
+  const top = Math.random() < 0.7 && lo <= L ? rnd(lo, L) : rnd(b, L)
+  let a: number, res: number
+  if (op === '+') { res = top; a = top - b }
+  else { a = top; res = a - b }
   const find = c.find === 'mix' ? (Math.random() < 0.5 ? 'resultat' : 'manquant') : c.find
   const blank = find === 'resultat' ? 'c' : Math.random() < 0.7 ? 'b' : 'a'
   return { kind: 'calc', op, a, b, c: res, blank }
@@ -67,14 +73,11 @@ export const calcAnswer = (q: CalcQuestion) => q[q.blank]
 /** Titre automatique : « Additions +0 à +10 », « Soustractions −2, −5 »… */
 export function calcTitle(c: CalculConfig): string {
   if (c.astuces) return 'Calculer efficacement'
-  if (c.limite) {
-    const name = c.find === 'manquant' ? 'Le nombre manquant' : c.op === '+' ? 'Additions' : c.op === '-' ? 'Soustractions' : 'Calculs'
-    return `${name} jusqu'à ${c.limite}`
-  }
   const s = [...(c.steps || [])].sort((x, y) => x - y)
   const sign = c.op === '-' ? MINUS : c.op === '+' ? '+' : '±'
   const contiguous = s.length > 1 && s.every((v, i) => i === 0 || v === s[i - 1] + 1)
   const range = s.length === 0 ? '' : contiguous ? `${sign}${s[0]} à ${sign}${s[s.length - 1]}` : s.map(v => sign + v).join(', ')
   const name = c.find === 'manquant' ? 'Le nombre manquant' : c.op === '+' ? 'Additions' : c.op === '-' ? 'Soustractions' : 'Calculs'
+  if (c.limite) return `${name} ${range} jusqu'à ${c.limite}`.replace(/\s+/g, ' ').trim()
   return `${name} ${range}${c.digits === 3 ? ' (3 chiffres)' : c.digits === 1 ? ' (petits nombres)' : ''}`.trim()
 }

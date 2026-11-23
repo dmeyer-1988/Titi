@@ -105,7 +105,7 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
   if (testing) return <Runner exercise={draft} test onExit={() => setTesting(false)} />
 
   const c = config as DrapeauxConfig & ContinentsConfig & CantonsConfig & DicteeConfig & MystereConfig & NoeudsConfig & ChateauxConfig & CapaciteConfig & PaquetsConfig & CollectionConfig & SuiteConfig & TableConfig & AlphabetConfig & SonConfig & CalculConfig
-  const invalid = type === 'drapeaux' || type === 'continents' || type === 'cantons' ? false : type === 'dictee' ? parseList(c.list).length === 0 : type === 'son' ? !c.focus.some(hasSon) && !c.extra : type === 'calcul' ? !c.astuces && !c.limite && c.steps.length === 0 : type === 'noeuds' ? !c.skills?.length : type === 'chateaux' || type === 'capacite' || type === 'mystere' ? false : type !== 'alphabet' && c.min >= c.max
+  const invalid = type === 'drapeaux' || type === 'continents' || type === 'cantons' ? false : type === 'dictee' ? parseList(c.list).length === 0 : type === 'son' ? !c.focus.some(hasSon) && !c.extra : type === 'calcul' ? !c.astuces && c.steps.length === 0 : type === 'noeuds' ? !c.skills?.length : type === 'chateaux' || type === 'capacite' || type === 'mystere' ? false : type !== 'alphabet' && c.min >= c.max
 
   return (
     <div className="editor">
@@ -228,9 +228,7 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
               options={[{ v: 'resultat', l: 'Le résultat (34 + 3 = ?)' }, { v: 'manquant', l: 'Le nombre manquant (34 + ? = 37)' }, { v: 'mix', l: 'Les deux' }]} />
             <Chips label="Calculs jusqu'à" value={c.limite ?? 0} onChange={v => upd({ limite: v || undefined })}
               options={[{ v: 0, l: 'Grand nombre + n' }, ...[10, 20, 30, 40, 50, 100].map(v => ({ v, l: String(v) }))]} />
-            {c.limite
-              ? <small className="field wide">Tous les nombres du calcul restent entre 0 et {c.limite} (ex. {c.limite >= 20 ? '8 + 7 = 15, 17 − 9 = 8' : '6 + 3 = 9, 8 − 5 = 3'}).</small>
-              : <>
+            {c.limite ? <small className="field wide">Tous les nombres du calcul restent entre 0 et {c.limite} (ex. {c.limite >= 20 ? '13 + 4 = 17, 18 − 6 = 12' : '6 + 3 = 9, 8 − 5 = 3'}).</small> : null}
             <div className="field wide">
               <span className="label">Nombres à {c.op === '-' ? 'enlever' : c.op === '+' ? 'ajouter' : 'ajouter ou enlever'}</span>
               <div className="seg steps">
@@ -246,9 +244,8 @@ export function Editor({ initial, nextPosition, onClose, onSaved }: {
                 <button type="button" className="all" onClick={() => upd({ steps: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] })}>Tout</button>
               </div>
             </div>
-            <Chips label="Le grand nombre" value={c.digits} onChange={v => upd({ digits: v })}
-              options={[{ v: 1, l: '1 chiffre (0-9)' }, { v: 2, l: '2 chiffres (10-99)' }, { v: 3, l: '3 chiffres (100-999)' }]} />
-            </>}
+            {!c.limite && <Chips label="Le grand nombre" value={c.digits} onChange={v => upd({ digits: v })}
+              options={[{ v: 1, l: '1 chiffre (0-9)' }, { v: 2, l: '2 chiffres (10-99)' }, { v: 3, l: '3 chiffres (100-999)' }]} />}
             </>}
           </>
         ) : type === 'son' ? (
