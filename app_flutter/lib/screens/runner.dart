@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/app_state.dart';
 import '../data/models.dart';
 import '../engine/calcul.dart';
+import '../engine/maths2.dart';
 import '../engine/question.dart';
 import '../engine/registry.dart';
 import '../engine/sons.dart';
@@ -10,6 +11,13 @@ import '../engine/words.dart';
 import '../games/calc.dart';
 import '../games/combien.dart';
 import '../games/drapeau.dart';
+import '../games/capacite.dart';
+import '../games/chateaux.dart';
+import '../games/entoure.dart';
+import '../games/noeuds.dart';
+import '../games/paquets.dart';
+import '../games/suite.dart';
+import '../games/table.dart';
 import '../games/son.dart';
 import '../ui/audio.dart';
 import '../ui/balls.dart';
@@ -51,7 +59,37 @@ class _RunnerScreenState extends State<RunnerScreen> {
     final q = this.q;
     switch (q) {
       case CollectionQuestion():
-        return (text: 'Combien de balles de tennis ?', speech: 'Combien de balles de tennis ?');
+        return ex.type == 'entoure'
+            ? (text: 'Entoure la collection de ${q.target} balles de tennis.', speech: 'Entoure la collection de ${words(q.target)} balles de tennis.')
+            : (text: 'Combien de balles de tennis ?', speech: 'Combien de balles de tennis ?');
+      case SuiteQuestion():
+        if (q.oral) {
+          return (
+            text: 'Écoute bien la consigne 🔊 et écris les nombres.',
+            speech: 'Compte de 1 en 1${q.down ? ' en reculant' : ''}, de ${words(q.seq.first)} jusqu\'à ${words(q.seq.last)}. Écris tous les nombres.',
+          );
+        }
+        return (text: 'Complète la suite.', speech: 'Complète la suite. Trouve les nombres qui manquent.');
+      case TableQuestion():
+        return (text: 'Complète les cases vides du tableau.', speech: 'Complète les cases vides du tableau. Touche une case vide, puis écris le nombre.');
+      case PaquetsQuestion():
+        return (text: 'Fais des paquets de 10 pour obtenir ${q.target} balles.', speech: 'Fais des paquets de 10 pour obtenir ${words(q.target)} balles. Entoure 10 balles avec ton doigt.');
+      case NoeudsQuestion():
+        final nn = nodeName(q.answer), t = q.thing.name;
+        String spell(String s) => s.split('').join(' ');
+        if (q.skill == 'lire') return (text: 'Sur quel nœud est $t ${q.thing.emoji} ?', speech: 'Sur quel nœud est $t ?');
+        if (q.skill == 'placer') return (text: 'Place $t ${q.thing.emoji} sur le nœud $nn.', speech: 'Place $t sur le nœud ${spell(nn)}. Touche le bon nœud.');
+        final m = moveText(q.move!);
+        return (
+          text: '${_cap(t)} ${q.thing.emoji} part du nœud ${nodeName(q.at)} et avance de $m. Touche le nœud d\'arrivée.',
+          speech: '${_cap(t)} part du nœud ${spell(nodeName(q.at))} et avance de $m. Touche le nœud d\'arrivée.',
+        );
+      case ChateauxQuestion():
+        return (text: 'Construis le château : ${q.towers} tours qui respectent les 2 conditions.', speech: 'Construis un château de ${words(q.total)} cubes. ${ruleText(q)} Essaie, vérifie, puis ajuste.');
+      case CapaciteQuestion():
+        return q.mode == 'verser'
+            ? (text: 'Qui contient le plus ? Verse le ${q.a.name} dans le ${q.b.name} pour comparer.', speech: 'Qui contient le plus ? Le récipient ${q.a.name} est plein. Verse-le dans le ${q.b.name} pour comparer.')
+            : (text: 'Qui contient le plus ?', speech: "On a rempli le ${q.a.name} jusqu'en haut, puis on l'a versé dans le ${q.b.name}. Lequel contient le plus ?");
       case CalcQuestion():
         String w(String k) => q.blank == k ? 'combien' : words(k == 'a' ? q.a : k == 'b' ? q.b : q.c);
         return (
@@ -85,7 +123,7 @@ class _RunnerScreenState extends State<RunnerScreen> {
       if (correct) {
         Sounds.good();
         msg = null;
-        if (q is SonQuestion) tries = 0; // mot à plusieurs trous : chaque trou repart « du premier coup »
+        if (q is SonQuestion || q is TableQuestion) tries = 0; // plusieurs cases : chaque case repart « du premier coup »
       } else {
         tries++;
         misses++;
@@ -100,7 +138,19 @@ class _RunnerScreenState extends State<RunnerScreen> {
                       ? 'Compte en avançant de 1 en 1 depuis le premier nombre.'
                       : 'Compte en reculant de 1 en 1 depuis le premier nombre.',
           SonQuestion() => isTrap(q.word) ? "C'est un mot piège : il ne suit pas la règle !" : 'Regarde la lettre juste après : est-ce un m, un b ou un p ?',
-          CollectionQuestion() => "Compte d'abord les paquets de 10, puis les balles seules.",
+          CollectionQuestion() => ex.type == 'entoure' ? 'Compte les paquets de 10.' : "Compte d'abord les paquets de 10, puis les balles seules.",
+          SuiteQuestion() => q.oral ? 'Réécoute la consigne avec le haut-parleur. On avance de 1 à chaque fois.' : 'Regarde de combien on avance à chaque fois.',
+          TableQuestion() => 'Additionne le nombre de la ligne et celui de la colonne.',
+          PaquetsQuestion() => (int.tryParse(given) ?? 0) < (int.tryParse(expected) ?? 0)
+              ? 'Il te manque des balles : ajoute un paquet de 10 ou des balles seules.'
+              : 'Tu en as trop : enlève des balles.',
+          NoeudsQuestion() => q.skill == 'lire'
+              ? "Descends jusqu'à la lettre de la colonne, puis va à gauche jusqu'au chiffre de la ligne."
+              : q.skill == 'placer'
+                  ? "Ça, c'est le nœud $given. Trouve d'abord la colonne (la lettre en bas), puis la ligne (le chiffre à gauche)."
+                  : "Ça, c'est le nœud $given. Pose ton doigt sur ${nodeName(q.at)} et compte les nœuds un par un.",
+          ChateauxQuestion() => 'Ajuste et vérifie encore.',
+          CapaciteQuestion() => "Regarde bien : est-ce que l'eau a débordé ? Ou est-ce que le récipient n'est pas plein ?",
         };
         msg = _Msg(false, 'Essaie encore !', hint);
         Sounds.say(hint);
@@ -131,6 +181,26 @@ class _RunnerScreenState extends State<RunnerScreen> {
       case DrapeauQuestion():
         sub = '${q.answer.flag} ${q.answer.name}';
         Sounds.say('${q.answer.name}. $praise');
+      case SuiteQuestion():
+        sub = 'On ${q.down ? 'recule' : 'avance'} de ${q.step} à chaque fois.';
+        Sounds.say(praise);
+      case TableQuestion():
+        sub = first ? 'Tableau complet, sans une seule erreur !' : 'Tableau complet ! $misses erreur${misses > 1 ? 's' : ''} corrigée${misses > 1 ? 's' : ''}.';
+        Sounds.say(praise);
+      case PaquetsQuestion():
+        final t = q.target, p = t ~/ 10, u = t % 10;
+        sub = '$p paquet${p > 1 ? 's' : ''} de 10${u > 0 ? ' et $u balle${u > 1 ? 's' : ''}' : ''} = $t (${words(t)})';
+        Sounds.say('${words(t)} balles ! $praise');
+      case NoeudsQuestion():
+        final nn = nodeName(q.answer);
+        sub = q.skill == 'bouger' ? '${_cap(q.thing.name)} arrive sur le nœud $nn.' : '${_cap(q.thing.name)} est sur le nœud $nn : colonne ${nn[0]}, ligne ${nn.substring(1)}.';
+        Sounds.say('${nn.split('').join(' ')}. $praise');
+      case ChateauxQuestion():
+        sub = '${q.answer.join(' + ')} = ${q.total} cubes. Tu as bien ajusté tes essais !';
+        Sounds.say(praise);
+      case CapaciteQuestion():
+        sub = explainCapacite(q);
+        Sounds.say('$praise $sub');
     }
     setState(() {
       results[idx] = first;
@@ -140,7 +210,24 @@ class _RunnerScreenState extends State<RunnerScreen> {
     });
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _autoSpeak();
+  }
+
+  /// Consigne orale (compter de 1 en 1) : l'app la dit toute seule au début de chaque question.
+  void _autoSpeak() {
+    final q = this.q;
+    if (q is SuiteQuestion && q.oral) {
+      Future.delayed(const Duration(milliseconds: 450), () {
+        if (mounted && phase == 'play') Sounds.say(prompt.speech);
+      });
+    }
+  }
+
   void next() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _autoSpeak());
     setState(() {
       tries = 0;
       misses = 0;
@@ -169,10 +256,23 @@ class _RunnerScreenState extends State<RunnerScreen> {
         misses = 0;
       });
 
+  void nudge(String s) {
+    setState(() => msg = _Msg(false, 'Presque !', s));
+    Sounds.say(s);
+  }
+
   Widget _game(Question q) {
     final k = ValueKey(idx);
     return switch (q) {
-      CollectionQuestion() => CombienGame(key: k, q: q, onAttempt: onAttempt, onSolved: onSolved),
+      CollectionQuestion() => ex.type == 'entoure'
+          ? EntoureGame(key: k, q: q, onAttempt: onAttempt, onSolved: onSolved, onNudge: nudge)
+          : CombienGame(key: k, q: q, onAttempt: onAttempt, onSolved: onSolved),
+      SuiteQuestion() => SuiteGame(key: k, q: q, onAttempt: onAttempt, onSolved: onSolved),
+      TableQuestion() => TableGame(key: k, q: q, onAttempt: onAttempt, onSolved: onSolved),
+      PaquetsQuestion() => PaquetsGame(key: k, q: q, onAttempt: onAttempt, onSolved: onSolved, onNudge: nudge),
+      NoeudsQuestion() => NoeudsGame(key: k, q: q, onAttempt: onAttempt, onSolved: onSolved),
+      ChateauxQuestion() => ChateauxGame(key: k, q: q, onAttempt: onAttempt, onSolved: onSolved, onNudge: (s) => setState(() => msg = _Msg(false, 'Ajuste !', s))),
+      CapaciteQuestion() => CapaciteGame(key: k, q: q, onAttempt: onAttempt, onSolved: onSolved),
       CalcQuestion() => CalcGame(key: k, q: q, onAttempt: onAttempt, onSolved: onSolved),
       SonQuestion() => SonGame(key: k, q: q, onAttempt: onAttempt, onSolved: onSolved),
       DrapeauQuestion() => DrapeauGame(key: k, q: q, onAttempt: onAttempt, onSolved: onSolved),
@@ -305,6 +405,8 @@ class _RunnerScreenState extends State<RunnerScreen> {
     );
   }
 }
+
+String _cap(String t) => t.isEmpty ? t : t[0].toUpperCase() + t.substring(1);
 
 String _endMessage(int s, int total, String? name) {
   final n = name != null ? ', $name' : '';

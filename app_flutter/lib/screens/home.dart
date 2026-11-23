@@ -244,6 +244,36 @@ class _GameCard extends StatelessWidget {
           const TextSpan(text: 'p'),
           TextSpan(text: 'on', style: body(32, color: C.court, weight: FontWeight.w700)),
         ]));
+      case 'entoure':
+        return Stack(clipBehavior: Clip.none, children: [
+          const Pack(b: 18),
+          Positioned(left: -8, top: -8, right: -8, bottom: -8, child: DecoratedBox(decoration: BoxDecoration(border: Border.all(color: C.red, width: 3), borderRadius: BorderRadius.circular(40)))),
+        ]);
+      case 'paquets':
+        return Wrap(spacing: 2, runSpacing: 2, children: [for (var i = 0; i < 12; i++) const Ball(size: 14)]);
+      case 'suite':
+        final st = (ex.config['step'] as num?)?.toInt() ?? 10;
+        return ex.config['oral'] == true
+            ? Text('🔊 □ □', style: display(28, color: C.court))
+            : Text('${st * 2}  ${st * 3}  □', style: display(28, color: C.court));
+      case 'table':
+        return Text('+ │ 3  7\n6 │ 9  ?', style: display(18, color: C.court));
+      case 'noeuds':
+        return Text('A1 · C4', style: display(28, color: C.court));
+      case 'chateaux':
+        return Row(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
+          for (final (n, c) in const [(3, C.court), (5, C.red)])
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [for (var i = 0; i < n; i++) Container(width: 26, height: 9, margin: const EdgeInsets.only(top: 2), color: c)]),
+            ),
+        ]);
+      case 'capacite':
+        return Row(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
+          Container(width: 18, height: 50, decoration: BoxDecoration(color: const Color(0xFF6FB7E8), border: Border.all(color: C.red, width: 3))),
+          const SizedBox(width: 12),
+          Container(width: 44, height: 24, decoration: BoxDecoration(color: const Color(0xFF6FB7E8), border: Border.all(color: C.ok, width: 3))),
+        ]);
       case 'drapeaux':
         return const Row(mainAxisSize: MainAxisSize.min, children: [Flag('🇨🇭', size: 30), Flag('🇫🇷', size: 30), Flag('🇯🇵', size: 30)]);
       default:

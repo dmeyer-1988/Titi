@@ -3,6 +3,7 @@
 import '../data/models.dart';
 import 'calcul.dart';
 import 'geo.dart';
+import 'maths2.dart';
 import 'question.dart';
 import 'rng.dart';
 import 'sons.dart';
@@ -100,7 +101,29 @@ List<Question> drapeauxRound(Map<String, dynamic> c) {
   });
 }
 
+/// Les parties choisies tournent, dans un ordre mélangé.
+List<T> rotating<T>(int n, List<T> items) => shuffled(List.generate(n, (i) => items[i % items.length]));
+
 final Map<String, TypeDef> types = {
+  'entoure': TypeDef('maths', 'Entoure', (c) {
+    final onlyTens = cfgBool(c, 'onlyTens', true);
+    return uniqueRound(clampInt(cfgInt(c, 'questions', 10), 3, 20), (_) {
+      final t = collectionTarget(c);
+      return CollectionQuestion(t, collectionOptions(t, onlyTens, 4));
+    });
+  }),
+  'paquets': TypeDef('maths', 'Paquets de 10', (c) => uniqueRound(clampInt(cfgInt(c, 'questions', 5), 1, 20), (_) => paquetsQuestion(c))),
+  'suite': TypeDef('maths', 'Complète la suite', (c) => uniqueRound(clampInt(cfgInt(c, 'questions', 10), 3, 20), (_) => suiteQuestion(c))),
+  'table': TypeDef('maths', "Tableau d'addition", (c) => uniqueRound(clampInt(cfgInt(c, 'questions', 2), 1, 20), (_) => tableQuestion(c))),
+  'noeuds': TypeDef('maths', 'Les nœuds', (c) {
+    final n = clampInt(cfgInt(c, 'questions', 8), 3, 20);
+    var skills = cfgStrings(c, 'skills');
+    if (skills.isEmpty) skills = ['lire', 'placer', 'bouger'];
+    final order = rotating(n, shuffled(skills));
+    return uniqueRound(n, (i) => noeudsQuestion(order[i], c));
+  }),
+  'chateaux': TypeDef('maths', 'Tours de cubes', (c) => uniqueRound(clampInt(cfgInt(c, 'questions', 5), 1, 20), (_) => chateauxQuestion(c))),
+  'capacite': TypeDef('maths', 'Qui contient le plus ?', (c) => uniqueRound(clampInt(cfgInt(c, 'questions', 6), 1, 20), (i) => capaciteQuestion(c, i))),
   'combien': TypeDef('maths', 'Combien ?', (c) {
     final onlyTens = cfgBool(c, 'onlyTens', false);
     return uniqueRound(clampInt(cfgInt(c, 'questions', 10), 3, 20), (_) {

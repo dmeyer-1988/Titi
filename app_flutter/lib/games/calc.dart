@@ -3,6 +3,7 @@ import '../engine/calcul.dart';
 import '../engine/question.dart';
 import '../ui/theme.dart';
 import 'common.dart';
+import 'keypad.dart';
 
 /// Calcul « 34 + 3 = ? » ou « 34 + ? = 37 », avec un clavier à chiffres.
 class CalcGame extends StatefulWidget {
@@ -66,23 +67,6 @@ class _CalcGameState extends State<CalcGame> {
     final hops = help && q.tip == null && q.blank != 'a' && q.b > 0 && q.b <= 10
         ? List.generate(q.b + 1, (i) => q.op == '+' ? q.a + i : q.a - i)
         : null;
-    Widget keyBtn(String label, String d, {Color? color}) => SizedBox(
-          width: 86,
-          height: 70,
-          child: Material(
-            color: color ?? Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: done ? null : () => press(d),
-              child: Container(
-                alignment: Alignment.center,
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: color ?? C.rule, width: 2)),
-                child: Text(label, style: display(30, color: color == null ? C.ink : Colors.white)),
-              ),
-            ),
-          ),
-        );
     return Column(children: [
       Wrap(alignment: WrapAlignment.center, crossAxisAlignment: WrapCrossAlignment.center, spacing: 12, runSpacing: 8, children: [
         box('a'),
@@ -108,15 +92,7 @@ class _CalcGameState extends State<CalcGame> {
                   : Text("Astuce : fais le calcul à l'envers. ${q.op == '+' ? '${q.c} $minus ${q.b} = ?' : '${q.c} + ${q.b} = ?'}", style: body(17)),
         ),
       const SizedBox(height: 18),
-      SizedBox(
-        width: 86 * 3 + 24,
-        child: Wrap(spacing: 12, runSpacing: 12, children: [
-          for (final d in const ["1", "2", "3", "4", "5", "6", "7", "8", "9"]) keyBtn(d, d),
-          keyBtn("⌫", "del", color: C.inkSoft),
-          keyBtn("0", "0"),
-          keyBtn("OK", "ok", color: C.court),
-        ]),
-      ),
+      Keypad(onKey: press, enabled: !done),
     ]);
   }
 }

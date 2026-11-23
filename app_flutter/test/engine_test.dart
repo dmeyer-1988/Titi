@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bigou/engine/calcul.dart';
+import 'package:bigou/engine/maths2.dart';
 import 'package:bigou/engine/geo.dart';
 import 'package:bigou/engine/question.dart';
 import 'package:bigou/engine/registry.dart';
@@ -74,6 +75,34 @@ void main() {
         expect(q.options.map((o) => o.code).toSet().length, 4);
         expect(q.options.map((o) => o.code), contains(q.answer.code));
       }
+    }
+  });
+
+  test('lot 2 : suite, tableau, paquets, nœuds, tours, capacité', () {
+    for (var i = 0; i < 100; i++) {
+      final s = makeRound(ex('suite', {'min': 10, 'max': 100, 'step': 10, 'length': 6, 'blanks': 2, 'direction': 'both', 'questions': 5})).cast<SuiteQuestion>();
+      for (final q in s) {
+        for (var k = 1; k < q.seq.length; k++) {
+          expect((q.seq[k] - q.seq[k - 1]).abs(), 10);
+        }
+        expect(q.blanks.every((b) => b >= 2), isTrue);
+      }
+      final t = makeRound(ex('table', {'min': 2, 'max': 9, 'size': 4, 'mode': 'mixte', 'questions': 1})).first as TableQuestion;
+      expect(t.rows.length, 4);
+      expect(t.blanks, isNotEmpty);
+      final p = makeRound(ex('paquets', {'min': 11, 'max': 49, 'extra': true, 'questions': 1})).first as PaquetsQuestion;
+      expect(p.balls.length, greaterThan(p.target));
+      final n = makeRound(ex('noeuds', {'size': 5, 'skills': ['lire', 'bouger'], 'questions': 6})).cast<NoeudsQuestion>();
+      for (final q in n) {
+        expect(q.answer.$1, inInclusiveRange(0, 4));
+        expect(q.answer.$2, inInclusiveRange(0, 4));
+        if (q.skill == 'lire') expect(q.options.toSet().length, 4);
+      }
+      final h = makeRound(ex('chateaux', {'towers': 3, 'maxTotal': 24, 'questions': 1})).first as ChateauxQuestion;
+      final r = checkChateau(h, h.answer);
+      expect(r.totalOk && r.ruleOk, isTrue);
+      final v = makeRound(ex('capacite', {'compare': 'mix', 'questions': 1})).first as CapaciteQuestion;
+      expect(['a', 'b', 'pareil'], contains(v.answer));
     }
   });
 
