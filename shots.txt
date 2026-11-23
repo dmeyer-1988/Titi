@@ -1,0 +1,35 @@
+
+::group::✅ Passing tests
+✅ accueil ipad
+✅ matière ipad
+✅ jeu d1 ipad
+✅ jeu d2 ipad
+✅ jeu d3 ipad
+✅ jeu d4 ipad
+✅ jeu d5 ipad
+✅ jeu e1 ipad
+✅ jeu e2 ipad
+✅ jeu e3 ipad
+✅ jeu e4 ipad
+✅ jeu e5 ipad
+✅ jeu e6 ipad
+✅ jeu e7 ipad
+✅ jeu e8 ipad
+✅ accueil phone
+✅ matière phone
+✅ jeu d1 phone
+✅ jeu d2 phone
+✅ jeu d3 phone
+✅ jeu d4 phone
+✅ jeu d5 phone
+✅ jeu e1 phone
+✅ jeu e2 phone
+✅ jeu e3 phone
+✅ jeu e4 phone
+✅ jeu e5 phone
+✅ jeu e6 phone
+✅ jeu e7 phone
+✅ jeu e8 phone
+::endgroup::
+
+🎉 30 tests passed.
